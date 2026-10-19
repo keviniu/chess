@@ -230,6 +230,16 @@ tr.differs td { background: var(--bad-bg); }
 .rec small { color: var(--muted); display: block; font-size: 11px; }
 .rec td.nt { white-space: normal; min-width: 160px; max-width: 280px; }
 #sumOut { min-height: 140px; }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+@media (max-width: 520px) { .stats { grid-template-columns: minmax(0, 1fr); } }
+.stat { padding: 12px 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--raised); min-width: 0; }
+.stat .sl { font: 600 11px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.stat .sv { font: 800 36px/1.1 var(--font-display); font-stretch: 115%; font-variation-settings: "wdth" 115; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.stat .sv small { font-size: 15px; font-weight: 600; color: var(--muted); }
+.stat .sp2 { font: 700 22px var(--font-mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+.stat.gold .sv { color: var(--unsure); }
+.stathint { font-size: 14px; margin-top: 10px; }
+.tally { flex-wrap: wrap; }
 .sess { font-size: 13px; color: var(--ink); margin-bottom: 4px; }
 .sess b { font-family: var(--font-mono); }
 .sess.unsaved { color: var(--unsure); }
@@ -1126,14 +1136,13 @@ function renderEngine() {
   if (!a) { box.innerHTML = ''; return; }
   var played = S.ply < S.ucis.length ? S.ucis[S.ply] : null;
   var best = a.L[0];
-  var h = '<div class="score">';
-  if (!d.cands.length) {
-    h += '<div class="big">—</div><div>Pick candidates in step 2 to get a score. The engine’s top three are ' + a.top.map(function (u) { return '<b>' + esc(a.byUci[u].san) + '</b>'; }).join(', ') + '.</div>';
-  } else {
-    h += '<div class="big' + (a.gold ? ' gold' : '') + '">' + (a.gold ? '★ ' : '') + a.hits + '<small> of ' + a.picks.length + '</small></div>';
-    h += '<div>' + (a.gold ? 'Gold star. All of your top ' + a.want + ' candidates are in the engine’s top three.' : 'of your top ' + a.picks.length + ' candidate' + (a.picks.length === 1 ? ' is' : 's are') + ' in the engine’s top three. Aim for your candidates to sit near the top of the list.') + '</div>';
+  function tile(label, n, of, cls) {
+    return '<div class="stat' + (cls || '') + '"><div class="sl">' + label + '</div><div class="sv">' + (of ? n + '<small> of ' + of + '</small>' : '\u2014') + '</div><div class="sp2">' + (of ? Math.round(n / of * 100) + '%' : 'not scored yet') + '</div></div>';
   }
-  h += '</div><ul class="facts">';
+  var h = '<div class="stats">' + tile('Your candidates in the engine top 3', a.hits, a.picks.length, a.gold ? ' gold' : '') + tile('Your grades that agree with the engine', a.agree, a.total) + '</div>';
+  if (!d.cands.length) h += '<p class="stathint">Pick candidates in step 2 to score them. The engine\u2019s top three are ' + a.top.map(function (u) { return '<b>' + esc(a.byUci[u].san) + '</b>'; }).join(', ') + '.</p>';
+  else h += '<p class="stathint">' + (a.gold ? 'Gold star. All of your top ' + a.want + ' candidates are in the engine\u2019s top three.' : 'Aim for your candidates to sit near the top of the engine\u2019s list.') + ' Unsure grades are left out of the grade comparison.</p>';
+  h += '<ul class="facts">';
   if (d.cands.length) {
     h += '<li>Candidate ranks: ' + d.cands.map(function (u, i) {
       var l = a.byUci[u]; return 'C' + (i + 1) + ' <b>' + esc(sanOf(u)) + '</b> is #' + (l ? l.rank + ' (' + fmtEval(l) + ')' : 'not ranked');
@@ -1269,13 +1278,15 @@ function copyText(text, btn, label) {
 }
 
 function renderTally() {
-  var checked = 0, gold = 0, hits = 0, picks = 0;
+  var checked = 0, gold = 0, hits = 0, picks = 0, agree = 0, total = 0;
   Object.keys(S.data).forEach(function (k) {
     var d = S.data[k]; if (!d || !d.eng) return;
     var a = analyse(d.eng, d); if (!a) return;
-    checked++; if (a.gold) gold++; hits += a.hits; picks += a.picks.length;
+    checked++; if (a.gold) gold++; hits += a.hits; picks += a.picks.length; agree += a.agree; total += a.total;
   });
-  $('tally').innerHTML = '<div><b>' + checked + '</b>positions checked</div><div><b>' + gold + '</b>gold stars</div><div><b>' + (picks ? Math.round(hits / picks * 100) + '%' : '—') + '</b>candidates in top 3</div>';
+  function stat(n, of, label) { return '<div><b>' + (of ? n + '/' + of + ' \u00b7 ' + Math.round(n / of * 100) + '%' : '\u2014') + '</b>' + label + '</div>'; }
+  $('tally').innerHTML = '<div><b>' + checked + '</b>positions checked</div><div><b>' + gold + '</b>gold stars</div>' +
+    stat(hits, picks, 'candidates in top 3') + stat(agree, total, 'grades agree with engine');
 }
 
 /* ---------- render all, events ---------- */
