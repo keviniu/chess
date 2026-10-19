@@ -156,7 +156,7 @@ textarea { width: 100%; min-height: 84px; margin-top: 8px; font: 13px/1.4 var(--
 .sep { width: 8px; }
 .chip { font: 600 13px var(--font-mono); display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 5px 9px; border-radius: 4px; border: 1px solid var(--line); background: var(--raised); color: var(--ink); }
 .chip:hover { border-color: var(--accent); }
-.chip .sym { width: 1ch; font-weight: 700; text-align: center; }
+.chip .sym { width: 1.2ch; font-size: 20px; line-height: 1; font-weight: 700; text-align: center; }
 .chip.g-good { background: var(--good-bg); border-color: var(--good); } .chip.g-good .sym { color: var(--good); }
 .chip.g-ok { background: var(--ok-bg); border-color: var(--ok); } .chip.g-ok .sym { color: var(--ok); }
 .chip.g-unsure { background: var(--unsure-bg); border-color: var(--unsure); } .chip.g-unsure .sym { color: var(--unsure); }
@@ -173,7 +173,7 @@ h3 { font: 600 12px var(--font-mono); text-transform: uppercase; letter-spacing:
 .cands { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .cands li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; background: var(--raised); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; }
 .cands .nm { font: 700 14px var(--font-mono); flex: 1; min-width: 60px; }
-.cands .gs { font: 700 13px var(--font-mono); }
+.cands .gs { font: 700 22px/1 var(--font-mono); }
 .gs.g-good { color: var(--good); } .gs.g-ok { color: var(--ok); } .gs.g-unsure { color: var(--unsure); } .gs.g-bad { color: var(--bad); }
 .status { display: grid; gap: 5px; }
 .stbtn { text-align: left; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; border: 1px solid var(--line); background: var(--raised); border-radius: 4px; padding: 7px 10px; font-size: 14px; }
@@ -213,8 +213,11 @@ td.pv { font: 400 12px var(--font-mono); color: var(--muted); }
 .pill.good { background: var(--good-bg); color: var(--good); } .pill.ok { background: var(--ok-bg); color: var(--ok); } .pill.bad { background: var(--bad-bg); color: var(--bad); }
 .tag { font: 700 10px var(--font-mono); padding: 1px 5px; border-radius: 3px; margin-left: 5px; background: var(--accent); color: var(--accent-ink); vertical-align: 1px; }
 .tag.played { background: transparent; color: var(--muted); border: 1px solid var(--line); }
-.diff { color: var(--bad); font-weight: 700; margin-left: 4px; }
+.diff { color: var(--bad); font-weight: 800; font-size: 26px; line-height: 1; margin-left: 10px; vertical-align: middle; display: inline-block; }
 .you { font: 700 14px var(--font-mono); text-align: center; }
+.you .gs { font-size: 24px; line-height: 1; }
+.eicon { font: 700 24px/1 var(--font-mono); margin-right: 8px; vertical-align: middle; display: inline-block; min-width: 1.1ch; text-align: center; }
+tr.differs td { background: var(--bad-bg); }
 
 /* game record */
 .rec td { vertical-align: top; }
@@ -1153,9 +1156,9 @@ function renderEngine() {
   a.L.forEach(function (l) {
     var gr = d.grades[l.uci], ci = d.cands.indexOf(l.uci), differs = false;
     if (gr && gr !== 'unsure') differs = gr === 'good' ? l.cls !== 'good' : gr === 'ok' ? l.cls === 'bad' : l.cls !== 'bad';
-    h += '<tr data-uci="' + l.uci + '"' + (ci >= 0 ? ' class="is-cand"' : '') + '><td class="num">' + l.rank + '</td><td class="m">' + esc(l.san) +
+    h += '<tr data-uci="' + l.uci + '"' + ((ci >= 0 || differs) ? ' class="' + (ci >= 0 ? 'is-cand' : '') + (differs ? ' differs' : '') + '"' : '') + '><td class="num">' + l.rank + '</td><td class="m">' + esc(l.san) +
       (ci >= 0 ? '<span class="tag">C' + (ci + 1) + '</span>' : '') + (l.uci === played ? '<span class="tag played">played</span>' : '') +
-      '</td><td class="num">' + fmtEval(l) + '</td><td class="num">' + fmtLoss(l.loss) + '</td><td class="you">' + (gr ? '<span class="gs g-' + gr + '">' + GSYM[gr] + '</span>' : '') + '</td><td><span class="pill ' + l.cls + '">' + l.cls + '</span>' + (differs ? '<span class="diff" title="Your grade differs from the engine">≠</span>' : '') + '</td><td class="pv">' + esc(l.pv) + '</td></tr>';
+      '</td><td class="num">' + fmtEval(l) + '</td><td class="num">' + fmtLoss(l.loss) + '</td><td class="you">' + (gr ? '<span class="gs g-' + gr + '">' + GSYM[gr] + '</span>' : '') + '</td><td style="white-space:nowrap"><span class="gs eicon g-' + l.cls + '">' + GSYM[l.cls] + '</span><span class="pill ' + l.cls + '">' + l.cls + '</span>' + (differs ? '<span class="diff" title="Your grade differs from the engine">≠</span>' : '') + '</td><td class="pv">' + esc(l.pv) + '</td></tr>';
   });
   h += '</tbody></table></div>';
   box.innerHTML = h;
