@@ -1,0 +1,1261 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>PEEL Practice Level 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Lexend:wght@400;500;600&display=swap">
+<style>
+/* Layout concept: one narrow column like an exercise sheet. Each PEEL part keeps its own colour everywhere (key, chips, labels, score bars). */
+:root {
+  --bg: #F2F5FB;
+  --surface: #FFFFFF;
+  --ink: #14213D;
+  --muted: #56637C;
+  --line: #D5DCEA;
+  --line-strong: #B3BFD8;
+  --btn-bg: #14213D;
+  --btn-fg: #FFFFFF;
+  --p: #2552D6;  --p-bg: #E2EAFD;
+  --e: #9A5700;  --e-bg: #FFEBC8;
+  --x: #6137C8;  --x-bg: #ECE5FC;
+  --l: #0A6F7D;  --l-bg: #D9F1F4;
+  --ok: #17703A; --ok-bg: #DDF3E5;
+  --no: #B3261E; --no-bg: #FCE4E1;
+  --mid: #D98300;
+  --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Lexend", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1626; --surface: #172036; --ink: #E8EDF8; --muted: #9AA7C2; --line: #2A3552; --line-strong: #43507A;
+    --btn-bg: #E8EDF8; --btn-fg: #0F1626;
+    --p: #8FAEFF; --p-bg: #1E2C5A;
+    --e: #FFC266; --e-bg: #4A3510;
+    --x: #BBA2FF; --x-bg: #35276B;
+    --l: #5CD0DD; --l-bg: #0F3E46;
+    --ok: #6FD08C; --ok-bg: #153D26;
+    --no: #FF8F86; --no-bg: #4A1E1B;
+    --mid: #FFB347;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1626; --surface: #172036; --ink: #E8EDF8; --muted: #9AA7C2; --line: #2A3552; --line-strong: #43507A;
+  --btn-bg: #E8EDF8; --btn-fg: #0F1626;
+  --p: #8FAEFF; --p-bg: #1E2C5A;
+  --e: #FFC266; --e-bg: #4A3510;
+  --x: #BBA2FF; --x-bg: #35276B;
+  --l: #5CD0DD; --l-bg: #0F3E46;
+  --ok: #6FD08C; --ok-bg: #153D26;
+  --no: #FF8F86; --no-bg: #4A1E1B;
+  --mid: #FFB347;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  padding-inline: 16px;
+  padding-block: 24px 56px;
+}
+.wrap { max-width: 720px; margin-inline: auto; display: grid; gap: 20px; }
+
+.eyebrow { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(36px, 9vw, 54px);
+  line-height: 1.02;
+  margin: 6px 0 8px;
+  text-wrap: balance;
+}
+.lede { color: var(--muted); margin: 0; max-width: 54ch; }
+
+.legend { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.legend li { border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.legend .ltr { font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.1; }
+.legend .wd { font-size: 12px; font-weight: 500; }
+.k-point { background: var(--p-bg); color: var(--p); }
+.k-evidence { background: var(--e-bg); color: var(--e); }
+.k-explain { background: var(--x-bg); color: var(--x); }
+.k-link { background: var(--l-bg); color: var(--l); }
+.k-whole { background: var(--line); color: var(--ink); }
+
+.tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.tab {
+  font: inherit; text-align: left; display: flex; flex-direction: column; gap: 0; min-width: 0;
+  background: var(--surface); color: var(--ink); border: 2px solid var(--line); border-radius: 12px; padding: 10px 14px; cursor: pointer;
+}
+.tab .t1 { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.tab .t2 { font-weight: 600; font-size: 15px; line-height: 1.25; overflow-wrap: anywhere; }
+.tab:hover { border-color: var(--ink); }
+.tab[aria-current="page"] { background: var(--btn-bg); border-color: var(--btn-bg); color: var(--btn-fg); }
+.tab[aria-current="page"] .t1 { color: var(--btn-fg); opacity: 0.8; }
+.tab:focus-visible { outline: 3px solid var(--p); outline-offset: 2px; }
+
+.progress { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.seg { height: 8px; border-radius: 4px; background: var(--line); }
+.seg.ok { background: var(--ok); }
+.seg.mid { background: var(--mid); }
+.seg.no { background: var(--no); }
+.seg.now { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: grid; gap: 16px; min-width: 0; }
+.qhead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.qnum { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chip { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 11px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.prompt { font-family: var(--font-display); font-weight: 700; font-size: clamp(21px, 5vw, 26px); line-height: 1.22; margin: 0; text-wrap: balance; }
+.prompt:focus { outline: none; }
+.context { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font-size: 15px; }
+.context .lab-t, .extract .lab-t { display: block; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 500; margin-bottom: 4px; }
+
+.options { display: grid; gap: 10px; list-style: none; margin: 0; padding: 0; }
+.opt {
+  display: flex; gap: 12px; align-items: flex-start; text-align: left; width: 100%;
+  font: inherit; color: inherit; background: var(--surface);
+  border: 2px solid var(--line); border-radius: 12px; padding: 12px 14px; cursor: pointer; min-width: 0;
+}
+.opt:hover:not(:disabled) { border-color: var(--ink); }
+.opt:focus-visible, .btn:focus-visible, .linkbtn:focus-visible, .lab:focus-visible { outline: 3px solid var(--p); outline-offset: 2px; }
+.opt .key {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line-strong);
+  display: grid; place-items: center; font-size: 13px; font-weight: 600;
+}
+.opt .txt { min-width: 0; overflow-wrap: anywhere; padding-top: 2px; }
+.opt .note { display: block; font-size: 12px; font-weight: 600; margin-top: 2px; }
+.opt:disabled { cursor: default; }
+.opt.dim { opacity: 0.75; }
+.opt.is-correct { border-color: var(--ok); background: var(--ok-bg); }
+.opt.is-correct .key { background: var(--ok); border-color: var(--ok); color: var(--surface); }
+.opt.is-correct .note { color: var(--ok); }
+.opt.is-wrong { border-color: var(--no); background: var(--no-bg); }
+.opt.is-wrong .key { background: var(--no); border-color: var(--no); color: var(--surface); }
+.opt.is-wrong .note { color: var(--no); }
+
+.feedback { border-radius: 12px; padding: 14px 16px; display: grid; gap: 4px; }
+.feedback.ok { background: var(--ok-bg); }
+.feedback.no { background: var(--no-bg); }
+.feedback.mid { background: var(--e-bg); }
+.feedback h3 { font-family: var(--font-display); font-size: 20px; margin: 0; }
+.feedback.ok h3 { color: var(--ok); }
+.feedback.no h3 { color: var(--no); }
+.feedback.mid h3 { color: var(--e); }
+.feedback p { margin: 0; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.btn {
+  font: inherit; font-weight: 600; background: var(--btn-bg); color: var(--btn-fg);
+  border: 2px solid var(--btn-bg); border-radius: 12px; padding: 11px 20px; cursor: pointer;
+}
+.btn.secondary { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+.btn:hover:not(:disabled) { filter: brightness(1.12); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.linkbtn { font: inherit; font-size: 14px; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 4px 0; }
+.hint { font-size: 14px; color: var(--muted); background: var(--bg); border-radius: 10px; padding: 10px 14px; margin: 0; }
+.hint strong { color: var(--ink); }
+
+.sents { display: grid; gap: 12px; list-style: none; margin: 0; padding: 0; }
+.sent { border: 2px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
+.sent.ok { border-color: var(--ok); background: var(--ok-bg); }
+.sent.no { border-color: var(--no); background: var(--no-bg); }
+.stxt { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
+.stxt > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.snum {
+  flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--line); color: var(--ink);
+  display: grid; place-items: center; font-size: 12px; font-weight: 600; margin-top: 1px;
+}
+.labs { display: flex; flex-wrap: wrap; gap: 8px; }
+.lab {
+  font: inherit; font-size: 13px; font-weight: 600; background: var(--surface); color: var(--ink);
+  border: 2px solid var(--line-strong); border-radius: 999px; padding: 6px 13px; cursor: pointer;
+}
+.lab:hover { border-color: var(--ink); }
+.lab.used { border-style: dashed; color: var(--muted); }
+.lab.on { border-style: solid; }
+.lab.on.k-point { border-color: var(--p); }
+.lab.on.k-evidence { border-color: var(--e); }
+.lab.on.k-explain { border-color: var(--x); }
+.lab.on.k-link { border-color: var(--l); }
+.verdict { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 14px; font-weight: 600; }
+.vok { color: var(--ok); }
+.vno { color: var(--no); }
+.why { margin: 0; font-size: 14px; color: var(--muted); }
+.ordered { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ordered li { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 15px; }
+.ordered li > span:last-child { overflow-wrap: anywhere; }
+.ordered .chip { justify-content: center; }
+.onote { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+.extract { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.extract p { margin: 0; line-height: 1.7; }
+.aq { margin: 0; }
+textarea#write {
+  width: 100%; min-height: 170px; resize: vertical; font: inherit; line-height: 1.6; color: var(--ink); background: var(--surface);
+  border: 2px solid var(--line-strong); border-radius: 12px; padding: 12px 14px;
+}
+textarea#write:focus-visible { outline: 3px solid var(--p); outline-offset: 2px; }
+.mine { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg); border-radius: 12px; padding: 12px 14px; }
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.checks li { display: flex; gap: 12px; align-items: flex-start; }
+.checks input { width: 22px; height: 22px; flex: none; margin: 2px 0 0; accent-color: var(--ok); }
+.checks input:focus-visible { outline: 3px solid var(--p); outline-offset: 2px; }
+.checks label { min-width: 0; overflow-wrap: anywhere; }
+.f-write { background: var(--ink); }
+.sub { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 500; margin: 0; }
+
+.score { display: grid; gap: 2px; }
+.pct { font-family: var(--font-display); font-weight: 800; font-size: clamp(76px, 24vw, 128px); line-height: 0.95; font-variant-numeric: tabular-nums; }
+.pct sup { font-size: 0.45em; vertical-align: top; position: relative; top: 0.12em; margin-left: 2px; }
+.fraction { font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.msg { margin: 8px 0 0; font-size: 17px; max-width: 48ch; }
+.focus-line { margin: 0; color: var(--muted); font-size: 15px; }
+.small { font-size: 13px; color: var(--muted); margin: 0; }
+h2 { font-family: var(--font-display); font-size: 22px; margin: 0; text-wrap: balance; }
+h2:focus { outline: none; }
+
+.parts { display: grid; gap: 12px; }
+.part { display: grid; grid-template-columns: 104px minmax(0, 1fr) 52px; gap: 10px; align-items: center; }
+.part .nm { font-size: 14px; font-weight: 600; line-height: 1.2; }
+.part .nm span { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+.track { height: 12px; border-radius: 6px; background: var(--line); overflow: hidden; }
+.fill { height: 100%; border-radius: 6px; }
+.part .val { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
+.f-point { background: var(--p); }
+.f-evidence { background: var(--e); }
+.f-explain { background: var(--x); }
+.f-link { background: var(--l); }
+.f-whole { background: var(--ink); }
+
+.review { list-style: none; margin: 0; padding: 0; display: grid; }
+.review li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.review li:first-child { border-top: 0; }
+.mark { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; font-weight: 700; color: var(--surface); }
+.mark.ok { background: var(--ok); }
+.mark.mid { background: var(--mid); }
+.mark.no { background: var(--no); }
+.review .q { font-weight: 500; overflow-wrap: anywhere; }
+.review .detail { font-size: 14px; color: var(--muted); overflow-wrap: anywhere; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 10px; border-top: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; border-top: 0; }
+tr.now td { font-weight: 600; background: var(--bg); }
+
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+@media (max-width: 560px) { .tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) {
+  .tab { padding: 8px 10px; }
+  .tab .t1 { letter-spacing: 0.06em; }
+  .tab .t2 { font-size: 13px; }
+}
+@media (max-width: 420px) {
+  .card { padding: 16px; }
+  .part { grid-template-columns: 92px minmax(0, 1fr) 46px; }
+  .ordered li { grid-template-columns: 78px minmax(0, 1fr); }
+}
+</style>
+
+<main class="wrap">
+  <header>
+    <div class="eyebrow">English GCSE Writing · Level 1 · Year 8</div>
+    <h1>PEEL Practice</h1>
+    <p class="lede" id="lede"></p>
+  </header>
+
+  <ul class="legend" aria-label="PEEL colour key">
+    <li class="k-point"><span class="ltr">P</span><span class="wd">Point</span></li>
+    <li class="k-evidence"><span class="ltr">E</span><span class="wd">Evidence</span></li>
+    <li class="k-explain"><span class="ltr">E</span><span class="wd">Explain</span></li>
+    <li class="k-link"><span class="ltr">L</span><span class="wd">Link</span></li>
+  </ul>
+
+  <nav class="tabs" aria-label="Choose a part">
+    <button type="button" class="tab" data-mode="q"><span class="t1">Part 1</span><span class="t2">Questions</span></button>
+    <button type="button" class="tab" data-mode="p"><span class="t1">Part 2</span><span class="t2">Label the paragraph</span></button>
+    <button type="button" class="tab" data-mode="h"><span class="t1">Part 3</span><span class="t2">No clue words</span></button>
+    <button type="button" class="tab" data-mode="a"><span class="t1">Part 4</span><span class="t2">Analyse an article</span></button>
+  </nav>
+
+  <div id="app"></div>
+  <p class="small" id="storage-note"></p>
+</main>
+
+<script>
+(function () {
+  var KEYS = ["point", "evidence", "explain", "link"];
+  var PARTS = {
+    point:    { label: "Point" },
+    evidence: { label: "Evidence" },
+    explain:  { label: "Explain" },
+    link:     { label: "Link" },
+    whole:    { label: "Whole PEEL" },
+    write:    { label: "My writing" }
+  };
+  var PART_ORDER = ["point", "evidence", "explain", "link", "whole", "write"];
+
+  /* ---------- Part 1: questions. The first option of every question is the correct one; options are shuffled on each attempt. ---------- */
+  var Q = [
+    {
+      part: "whole", short: "What PEEL stands for",
+      prompt: "What does PEEL stand for?",
+      options: ["Point, Evidence, Explain, Link", "Plan, Edit, Express, Learn", "Point, Example, Emphasis, Language", "Paragraph, Evidence, Explain, Link"],
+      why: "PEEL stands for Point, Evidence, Explain, Link. It is a way to build a clear paragraph, one step at a time.",
+      hint: "The first letter, P, is the main idea of your paragraph."
+    },
+    {
+      part: "point", short: "Spot the Point",
+      prompt: "Which sentence is the POINT?",
+      options: [
+        "Schools should give students more time for sport.",
+        "For example, one study found that active students concentrate better in class.",
+        "This shows that exercise helps the brain to focus.",
+        "This is why every school should offer more sport."
+      ],
+      why: "The Point is the main idea of the paragraph, usually the first sentence. This one is the argument the writer goes on to prove.",
+      hint: "The Point is the big idea. It usually comes first."
+    },
+    {
+      part: "evidence", short: "Spot the Evidence",
+      prompt: "Which sentence is the EVIDENCE?",
+      options: [
+        "For example, one study found that active students concentrate better in class.",
+        "Schools should give students more time for sport.",
+        "This shows that exercise helps the brain to focus.",
+        "This is why every school should offer more sport."
+      ],
+      why: "Evidence is a fact, example, statistic or quotation that backs up your point. \"One study found...\" is a fact, and \"For example\" is a handy clue.",
+      hint: "Evidence is proof. Look for a study, a statistic or \"For example\"."
+    },
+    {
+      part: "explain", short: "Spot the Explain",
+      prompt: "Which sentence is the EXPLAIN part?",
+      options: [
+        "This shows that exercise helps the brain to focus, so students learn more in lessons.",
+        "Schools should give students more time for sport.",
+        "For example, one study found that active students concentrate better in class.",
+        "Sport is on the timetable twice a week."
+      ],
+      why: "Explain says what the evidence shows and why it matters. \"This shows that...\" is a great way to start it. This is where you earn the most marks.",
+      hint: "Explain answers: So what? Why does this evidence matter?"
+    },
+    {
+      part: "link", short: "Spot the Link",
+      prompt: "Which sentence is the LINK?",
+      options: [
+        "This is why more sport time would benefit everyone in the school.",
+        "One study found that active students concentrate better.",
+        "Exercise helps the brain to focus.",
+        "Students should do more sport."
+      ],
+      why: "The Link finishes the paragraph by connecting back to your main argument or the question. \"This is why...\" is a good starter.",
+      hint: "The Link looks back at the big argument and closes the paragraph."
+    },
+    {
+      part: "point", short: "Point about school uniform",
+      prompt: "A paragraph is about school uniform. Which sentence is the POINT?",
+      options: [
+        "School uniform should be compulsory in every school.",
+        "A survey found that 7 out of 10 students feel less pressure about clothes.",
+        "This shows that uniform helps students to feel equal.",
+        "That is why every school should keep its uniform."
+      ],
+      why: "The Point is the main argument. The other sentences prove it (Evidence), explain it (Explain) or link back to it (Link).",
+      hint: "Which sentence is the argument that the others are trying to prove?"
+    },
+    {
+      part: "evidence", short: "Evidence openers",
+      prompt: "Which opening is a good clue that EVIDENCE is coming?",
+      options: [
+        "For example, a study found that...",
+        "This shows that...",
+        "That is why...",
+        "I think that..."
+      ],
+      why: "Evidence often starts with \"For example\", \"For instance\" or \"A study found\". \"This shows that\" begins an Explain, \"That is why\" begins a Link, and \"I think\" is only an opinion.",
+      hint: "Think about the words that introduce a fact or an example."
+    },
+    {
+      part: "explain", short: "The job of Explain",
+      prompt: "In PEEL, which part tells the reader WHY your evidence matters?",
+      options: ["Explain", "Point", "Evidence", "Link"],
+      why: "Explain answers the question \"So what?\". It says what the evidence shows and why that matters to your point.",
+      hint: "It answers the question: so what?"
+    },
+    {
+      part: "link", short: "The job of Link",
+      prompt: "What is the job of the LINK?",
+      options: [
+        "To connect back to your main argument or the question",
+        "To start a brand-new topic with no connection",
+        "To copy the evidence word for word",
+        "To add a second, different point"
+      ],
+      why: "The Link ties the paragraph back to your main argument or the question, so the whole piece stays focused.",
+      hint: "Think about how the paragraph ends. It should not wander off."
+    },
+    {
+      part: "whole", short: "Find the missing part",
+      context: "Schools should start later in the morning. This shows that teenagers need more sleep, so lessons would be more productive. That is why a later start would help every student.",
+      prompt: "Which part of PEEL is MISSING from this paragraph?",
+      options: ["Evidence", "Point", "Explain", "Link"],
+      why: "The paragraph has a Point, an Explain and a Link, but no fact or example to back it up. Evidence could be: \"For example, one study found that teenagers' body clocks naturally shift later.\"",
+      hint: "Is there a fact, example or statistic anywhere in the paragraph?"
+    }
+  ];
+
+  /* ---------- Part 2: paragraphs. Sentences are stored in PEEL order [Point, Evidence, Explain, Link] and jumbled on screen. ---------- */
+  var P = [
+    { topic: "Homework", s: [
+      "Homework should be limited to thirty minutes a night.",
+      "A survey found that 7 out of 10 Year 8 students feel tired at school.",
+      "This shows that too much homework may stop students getting enough sleep, so they struggle to concentrate.",
+      "That is why schools should set shorter homework."] },
+    { topic: "Phones in lessons", s: [
+      "Mobile phones should be banned in lessons.",
+      "For example, one study found that test scores rose after phones were banned from classrooms.",
+      "This shows that phones distract students, so they learn less when they are allowed.",
+      "This is why a ban would help every student to succeed."] },
+    { topic: "Lunch break", s: [
+      "Schools should have a longer lunch break.",
+      "Many students only have 30 minutes, and some skip lunch to avoid the canteen queue.",
+      "This means they may feel hungry in afternoon lessons and struggle to concentrate.",
+      "Therefore, a longer lunch would improve learning for everyone."] },
+    { topic: "Walking to school", s: [
+      "Students should walk to school whenever they can.",
+      "A survey found that 80% of students who walk feel more awake in lessons.",
+      "This shows that walking wakes up the body and mind, so students arrive ready to learn.",
+      "This is why walking should be encouraged in every school."] },
+    { topic: "Daily reading", s: [
+      "Students should read for twenty minutes every day.",
+      "Research shows that students who read daily learn more new words each year.",
+      "This means they can understand harder books and write with more interesting vocabulary.",
+      "That is why schools should make daily reading part of the timetable."] },
+    { topic: "School start time", s: [
+      "Schools should start later in the morning.",
+      "For instance, studies show that teenagers' body clocks naturally shift later as they grow.",
+      "This shows that an early start catches students when they are least alert, so lessons are less productive.",
+      "That is why a later start would help every student."] },
+    { topic: "Planting trees", s: [
+      "Schools should plant more trees on their grounds.",
+      "Research shows that trees reduce air pollution by trapping dust.",
+      "This shows that trees make the air cleaner, so students would breathe healthier air at school.",
+      "This is why every school should plant trees."] },
+    { topic: "Cooking lessons", s: [
+      "Every student should learn to cook at school.",
+      "For example, a survey found that most teenagers cannot cook a meal from scratch.",
+      "This shows that students are missing a skill they will need, so they may rely on unhealthy ready meals.",
+      "That is why cooking lessons should be part of the school week."] },
+    { topic: "Recycling bins", s: [
+      "Every classroom should have a recycling bin.",
+      "For example, one school recycled over two tonnes of paper in a year after adding bins to each room.",
+      "This shows that recycling is easy when bins are close by, so students are more likely to use them.",
+      "That is why recycling bins belong in every classroom."] },
+    { topic: "After-school clubs", s: [
+      "Schools should offer more after-school clubs.",
+      "A survey found that 9 out of 10 students who attend a club say they feel part of the school.",
+      "This shows that clubs help students to make friends, so they feel happier and more confident.",
+      "That is why schools should run more clubs for everyone."] }
+  ];
+  /* ---------- Part 3: paragraphs with no signpost phrases. Same order [Point, Evidence, Explain, Link]; notes explain each sentence's job. ---------- */
+  var H = [
+    { topic: "Breakfast clubs", s: [
+      "Every school should run a free breakfast club.",
+      "At Ashby Park School, Monday attendance rose from 91% to 96% in the term after a club opened.",
+      "A hot breakfast means pupils arrive on time and ready to learn instead of sitting through lessons hungry.",
+      "Schools that want better attendance and calmer mornings should open their doors early."],
+      notes: [
+        "The claim. Everything else in the paragraph supports it.",
+        "Facts you could check: a named school and real figures.",
+        "Reasoning that joins the facts to the claim: why a club leads to better attendance.",
+        "Closes the paragraph by turning the argument into a call to act."] },
+    { topic: "Learning about money", s: [
+      "Schools should teach students how to manage money.",
+      "In one poll of eighteen-year-olds, 4 in 10 said they had run out of money within a month of leaving home.",
+      "Nobody is born knowing how to budget, and habits learned early are far easier to keep than lessons learned the hard way.",
+      "A few lessons in school could save young people a great deal of worry later."],
+      notes: [
+        "The claim the paragraph wants the reader to accept.",
+        "A fact from a poll, with a number. It is not an opinion.",
+        "The reasoning behind the claim: why learning young matters.",
+        "Looks ahead to the benefit and rounds off the argument."] },
+    { topic: "Cycling to school", s: [
+      "Cycling to school should be encouraged more.",
+      "At Millbrook High, a cycle-to-school week lifted the number of bikes in the shed from nine to fifty-two.",
+      "Many students would happily ride but need a push, such as safe routes, a secure place to lock up, or friends to go with.",
+      "With the right support, school gates could be busier with bikes than with cars."],
+      notes: [
+        "The claim. It says what should happen.",
+        "A named school and real numbers showing that encouragement works.",
+        "Reasoning: what stops students from riding, and so why encouragement helps.",
+        "Pictures the future result and returns to the main idea."] },
+    { topic: "Student voice", s: [
+      "Students should help decide how some of the school budget is spent.",
+      "When Year 9 at Rowan Academy voted on new equipment, they chose water fountains and sports kit instead of the projector staff expected.",
+      "Students use the building all day, so they notice problems that adults can easily miss.",
+      "A real voice for students would help schools spend their money where it matters most."],
+      notes: [
+        "The claim. It is the argument being made.",
+        "A specific event: what Year 9 actually chose when they voted.",
+        "Reasoning: why students see things adults miss.",
+        "Closes with the benefit of making the change."] },
+    { topic: "A quiet room", s: [
+      "Every school should have a quiet room open at break and lunch.",
+      "At Elm Green School, 120 students used the new quiet room in its first week, and break-time arguments fell.",
+      "A busy playground is tiring for some students, and a calm place to recharge helps them return to lessons in a better mood.",
+      "Schools that care about wellbeing should make room for a little silence."],
+      notes: [
+        "The claim. It is what the paragraph sets out to prove.",
+        "Facts from a named school: how many students used the room and what changed.",
+        "Reasoning: why a calm space helps students.",
+        "Ends with a recommendation that returns to the main idea."] }
+  ];
+
+  var REASON = [
+    "This is the Point. It is the main idea, the argument the paragraph goes on to prove.",
+    "This is the Evidence. It is a fact, survey or example that backs up the point.",
+    "This is the Explain. It says what the evidence shows and why it matters.",
+    "This is the Link. It ties the paragraph back to the main argument."
+  ];
+  var HINT_P = "<strong>Clues.</strong> Point: the main argument. Evidence: a fact, survey or \"For example\". Explain: \"This shows that...\" or \"This means...\". Link: \"That is why...\" or \"Therefore...\".";
+
+  /* ---------- Part 4: analyse an article. Each stage lists its options with the best one first; options are shuffled on screen. ---------- */
+  var A = [
+    {
+      topic: "Phones",
+      extract: "Every morning, my phone wakes me before the sun does. Before I have even opened my eyes, I am reaching for it, like a sleepwalker drawn to a light. Within seconds, the screen has swallowed me: messages, news, photos of strangers’ breakfasts. An hour disappears. I tell myself I am in control, but the truth is that the device owns me, and I am its most loyal servant.",
+      question: "How does the writer use language to show that phones control our lives?",
+      stages: [
+        { options: [
+            "The writer uses a simile to suggest that phones pull us in without us choosing.",
+            "The writer says that he uses his phone a lot every morning.",
+            "The writer uses a simile.",
+            "The writer thinks phones are terrible and everyone should stop using them."],
+          why: "The best Point answers the question and names a method. “The writer says he uses his phone a lot” only retells the text. “The writer uses a simile” names the method but does not link it to the question. An opinion about phones is not analysis." },
+        { options: [
+            "“reaching for it, like a sleepwalker drawn to a light”",
+            "“Before I have even opened my eyes, I am reaching for it, like a sleepwalker drawn to a light.”",
+            "“An hour disappears.”",
+            "He reaches for his phone as soon as he wakes."],
+          why: "Good evidence is a short, exact quotation that supports your Point. The long version hides the key words. “An hour disappears” is a real quotation, but it supports a different idea (lost time). The last option is a paraphrase, not a quotation." },
+        { options: [
+            "The word “sleepwalker” suggests he is not properly awake or in control, as if the phone is acting on his mind. “Drawn” adds a strong, automatic pull, so the reader sees phone use as a habit that happens without thinking.",
+            "This shows that he uses his phone a lot in the morning, which is not good for him.",
+            "A simile compares one thing to another using “like”, which makes the writing more interesting.",
+            "The quotation is about a sleepwalker, who walks around in their sleep towards a light."],
+          why: "A strong Explain zooms in on particular words (“sleepwalker”, “drawn”) and says what they make the reader think or feel. The other options retell, give an opinion, define the method, or describe the quotation literally." }
+      ],
+      task: "Now write your own PEEL paragraph about a different quotation, such as “the screen has swallowed me” or “the device owns me”.",
+      model: [
+        "The writer uses a metaphor to show that the phone takes over his attention completely.",
+        "“the screen has swallowed me”",
+        "“Swallowed” suggests he is eaten up and powerless, as if the screen were a creature that has consumed him. This makes the reader see the phone as something dangerous that traps its owner.",
+        "This shows how strongly the phone controls his life."]
+    },
+    {
+      topic: "Library",
+      extract: "Our library is not just a building. It is the warm room where children discover dragons, where pensioners meet for tea, and where students find the quiet they cannot find at home. Close it, and we do not simply lose some shelves. We lose the heart of this town. Surely no council would be so careless as to throw away something so precious?",
+      question: "How does the writer use language to persuade the reader that the library should stay open?",
+      stages: [
+        { options: [
+            "The writer uses a list of different people to show that the library matters to everyone in the community.",
+            "The writer uses a list.",
+            "The writer talks about children, pensioners and students.",
+            "The writer is angry with the council and wants the library to stay open."],
+          why: "The best Point names a method (a list) and says what it does to persuade. “The writer uses a list” does not answer the question, and talking about children, pensioners and students only retells." },
+        { options: [
+            "“children discover dragons, where pensioners meet for tea, and where students find the quiet”",
+            "“It is the warm room where children discover dragons, where pensioners meet for tea, and where students find the quiet they cannot find at home.”",
+            "“Surely no council would be so careless”",
+            "“the heart of this town”"],
+          why: "The first quotation shows the whole list in the fewest words. The longer version buries it. The last two are good quotations, but they support different points (a rhetorical question and a metaphor), so they do not fit this Point." },
+        { options: [
+            "By naming children, pensioners and students, the writer shows that people of every age depend on the library. The list builds up, so the reader feels that closing it would harm the whole community, not just a few people.",
+            "The writer lists children, pensioners and students, which makes the sentence longer and more interesting.",
+            "This shows that the library is very important and should stay open.",
+            "A list of three is a common persuasive method that writers use in articles."],
+          why: "A strong Explain says what the evidence suggests and how the reader is meant to feel. The other options describe the sentence, repeat the opinion, or only name the method." }
+      ],
+      task: "Now write your own PEEL paragraph about a different quotation, such as “the heart of this town” or the final question.",
+      model: [
+        "The writer uses a metaphor to suggest that the library is the most important part of the town.",
+        "“the heart of this town”",
+        "A heart keeps a body alive, so the metaphor suggests that without the library the town would lose its life and warmth. This makes the reader feel that closing it would be a serious loss for everyone.",
+        "This persuades the reader that the library must stay open."]
+    },
+    {
+      topic: "Frosty morning",
+      extract: "By seven o’clock the frost had turned the playing field into a sheet of glass. My breath hung in the air like smoke, and the wind bit at my ears until they stung. Every step crunched. Every thought was of the warm classroom, still a long, grey walk away.",
+      question: "How does the writer use language to show how cold the morning is?",
+      stages: [
+        { options: [
+            "The writer uses a vivid verb to make the cold seem painful and aggressive.",
+            "The writer describes the cold weather in the morning.",
+            "The writer uses a verb.",
+            "The writer is cold and does not want to go to school."],
+          why: "The best Point names the method and its effect on the question (the cold feels painful). “Describes the cold weather” retells, and “uses a verb” names the method without linking it to the question." },
+        { options: [
+            "“the wind bit at my ears until they stung”",
+            "“By seven o’clock the frost had turned the playing field into a sheet of glass.”",
+            "“Every step crunched.”",
+            "The wind was biting his ears."],
+          why: "The first quotation holds the key verb “bit” and the follow-up “stung”. The second and third are good quotations, but about different things (ice and sound). The last is not a quotation." },
+        { options: [
+            "The verb “bit” makes the wind seem like an animal attacking him, so the cold feels painful and hard to escape. “Stung” adds to this by suggesting a sharp pain, which makes the reader share his discomfort.",
+            "This shows that the wind is very cold and it hurts his ears.",
+            "The wind bites his ears and then his ears sting, which is how the cold affects him.",
+            "A verb is a doing word, and the writer has chosen a strong one."],
+          why: "A strong Explain zooms in on “bit” and “stung” and says what they make the reader imagine. The others repeat the quotation, retell it, or define a verb." }
+      ],
+      task: "Now write your own PEEL paragraph about a different quotation, such as “a sheet of glass” or “My breath hung in the air like smoke”.",
+      model: [
+        "The writer uses a metaphor to show how hard and icy the ground has become.",
+        "“a sheet of glass”",
+        "Glass is smooth, hard and freezing to touch, so the metaphor suggests the field is slippery and dangerous as well as cold. The reader can picture the ice shining in the early light.",
+        "This helps to show how extreme the cold is."]
+    }
+  ];
+  var STAGE_PROMPT = ["Which is the best POINT?", "Which is the best EVIDENCE for that Point?", "Which is the best EXPLAIN for that evidence?"];
+  var STAGE_PART = ["point", "evidence", "explain"];
+  var CHECKS = [
+    "My Point names a method and answers the question.",
+    "My Evidence is a short, exact quotation.",
+    "My Explain zooms in on a word and says what it makes the reader think or feel.",
+    "My Link returns to the question."
+  ];
+  var FRAME_A = "<strong>Sentence starters.</strong> Point: The writer uses [method] to show that... Evidence: “[a few words]”. Explain: The word “...” suggests... This makes the reader feel... Link: This supports the idea that...";
+  var MARKS_PER = 7;
+
+  var HINT_H ="<strong>Think about the job.</strong> Point: the claim the whole paragraph is trying to prove. Evidence: specific facts, names or numbers. Explain: the reasoning that joins the evidence to the point. Link: closes the paragraph by returning to the main idea or looking ahead.";
+  /* Part 2 and Part 3 share one engine. P and ps always point at the paragraph set and state of the active part. */
+  var SETS = {
+    p: { paras: P, name: "Part 2", hint: HINT_P },
+    h: { paras: H, name: "Part 3", hint: HINT_H }
+  };
+
+  /* ---------- Saved attempts ---------- */
+  var STORE = {
+    q: { key: "peel-level1-history-v1", total: Q.length },
+    p: { key: "peel-level1-paragraphs-v1", total: P.length * 4 },
+    h: { key: "peel-level1-noclues-v1", total: H.length * 4 },
+    a: { key: "peel-level1-analysis-v1", total: A.length * MARKS_PER }
+  };
+  var storageOK = false;
+  var hist = { q: [], p: [], h: [], a: [] };
+  function loadHist(m) {
+    try {
+      var raw = localStorage.getItem(STORE[m].key);
+      if (!raw) return [];
+      var arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return [];
+      return arr.filter(function (h) {
+        return h && typeof h.pct === "number" && typeof h.score === "number" && typeof h.at === "number" && typeof h.n === "number";
+      }).slice(-10);
+    } catch (e) { return []; }
+  }
+  try {
+    localStorage.setItem("peel-l1-test", "1");
+    localStorage.removeItem("peel-l1-test");
+    storageOK = true;
+    hist.q = loadHist("q");
+    hist.p = loadHist("p");
+    hist.h = loadHist("h");
+    hist.a = loadHist("a");
+  } catch (e) {}
+  function saveHist(m) {
+    if (!storageOK) return;
+    try { localStorage.setItem(STORE[m].key, JSON.stringify(hist[m])); } catch (e) {}
+  }
+  function pushHist(m, score) {
+    var h = hist[m];
+    var total = STORE[m].total;
+    var entry = { n: h.length ? h[h.length - 1].n + 1 : 1, score: score, total: total, pct: percent(score, total), at: Date.now() };
+    h.push(entry);
+    hist[m] = h.slice(-10);
+    saveHist(m);
+    return entry;
+  }
+
+  /* ---------- Helpers ---------- */
+  var app = document.getElementById("app");
+  var ledeEl = document.getElementById("lede");
+  var LETTERS = ["A", "B", "C", "D"];
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var LEDE = {
+    q: "Ten quick questions on the four parts of a PEEL paragraph. Each question is worth 10%.",
+    p: "Ten jumbled paragraphs. Give every sentence a label: Point, Evidence, Explain or Link. Each sentence is worth 2.5%. The facts and figures are made up for practice.",
+    h: "Five paragraphs with no clue words. Ignore how a sentence starts and decide what job it does: Point, Evidence, Explain or Link. Each sentence is worth 5%. The facts and figures are made up for practice.",
+    a: "Read a short extract and answer a GCSE-style question about language. Choose the best Point, Evidence and Explain, then write your own PEEL paragraph and mark it with the checklist. The extracts are written for practice."
+  };
+  var mode = "q";
+  var qs, ps, pstates, an;
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function shuffle(a) {
+    var r = a.slice();
+    for (var i = r.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = r[i]; r[i] = r[j]; r[j] = t;
+    }
+    return r;
+  }
+  function percent(n, d) { return d ? Math.round(n / d * 100) : 0; }
+  function msgFor(pct) {
+    if (pct >= 90) return "Brilliant! You know your PEEL parts. You are ready for Level 2.";
+    if (pct >= 70) return "Great work. Read the notes on the ones you missed, then try again.";
+    if (pct >= 50) return "Good start. Go through the review below, then have another go.";
+    return "Keep going. Read each note in the review, then try again. You will improve fast.";
+  }
+  function scrollTop() { window.scrollTo(0, 0); }
+  function focusId(id) { var el = document.getElementById(id); if (el) el.focus({ preventScroll: true }); }
+
+  function newQ() {
+    return {
+      phase: "quiz", i: 0,
+      picks: Q.map(function () { return null; }),
+      order: Q.map(function (q) { return shuffle(q.options.map(function (_, k) { return k; })); }),
+      hint: false, result: null
+    };
+  }
+  function scramble() {
+    var p;
+    do { p = shuffle([0, 1, 2, 3]); } while (p[0] === 0 && p[1] === 1 && p[2] === 2 && p[3] === 3);
+    return p;
+  }
+  function newP(paras) {
+    return {
+      phase: "work", i: 0,
+      order: paras.map(function () { return scramble(); }),
+      labels: paras.map(function () { return [null, null, null, null]; }),
+      checked: paras.map(function () { return false; }),
+      marks: paras.map(function () { return 0; }),
+      hint: false, result: null
+    };
+  }
+
+  function progressHtml(segClass, label, n) {
+    n = n || 10;
+    var segs = "";
+    for (var k = 0; k < n; k++) segs += '<span class="' + segClass(k) + '"></span>';
+    return '<div class="progress" style="grid-template-columns:repeat(' + n + ',1fr)" role="img" aria-label="' + label + '">' + segs + "</div>";
+  }
+
+  function partsBlock(stats, unitWord) {
+    var html = "", weakest = null;
+    PART_ORDER.forEach(function (key) {
+      var s = stats[key];
+      if (!s) return;
+      var pc = percent(s.right, s.total);
+      if (pc < 100 && (weakest === null || pc < weakest.pc)) weakest = { key: key, pc: pc };
+      html += '<div class="part"><div class="nm">' + PARTS[key].label + "<span>" + s.right + " of " + s.total + " " + unitWord + "</span></div>" +
+        '<div class="track" role="img" aria-label="' + PARTS[key].label + " " + pc + ' percent"><div class="fill f-' + key + '" style="width:' + pc + '%"></div></div>' +
+        '<div class="val">' + pc + "%</div></div>";
+    });
+    var line = weakest ? "Practise next: " + PARTS[weakest.key].label + " (" + weakest.pc + "%)." : "You got every part right.";
+    return '<section class="card"><h2>Percent by PEEL part</h2><div class="parts">' + html + '</div><p class="focus-line">' + line + "</p></section>";
+  }
+
+  function historyBlock(m, curN) {
+    var h = hist[m];
+    if (!h.length) return "";
+    var best = 0, rows = "";
+    h.forEach(function (x) { if (x.pct > best) best = x.pct; });
+    h.slice().reverse().forEach(function (x) {
+      var when = new Date(x.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      rows += "<tr" + (x.n === curN ? ' class="now"' : "") + "><td>" + x.n + "</td><td>" + esc(when) + "</td><td>" + x.score + "/" + (x.total || STORE[m].total) + "</td><td>" + x.pct + "%</td></tr>";
+    });
+    return '<section class="card"><div class="qhead"><h2>All attempts</h2><span class="qnum">Best: ' + best + "%</span></div>" +
+      '<div class="scroll"><table><thead><tr><th>Attempt</th><th>When</th><th>Score</th><th>Percent</th></tr></thead><tbody>' + rows + "</tbody></table></div>" +
+      '<div class="actions"><button type="button" class="linkbtn" data-act="clear">Clear attempts</button></div></section>';
+  }
+
+  /* ---------- Part 1 rendering ---------- */
+  function renderQuestion() {
+    var q = Q[qs.i];
+    var pick = qs.picks[qs.i];
+    var answered = pick !== null;
+    var right = pick === 0;
+    var last = qs.i === Q.length - 1;
+
+    var opts = "";
+    qs.order[qs.i].forEach(function (orig, pos) {
+      var cls = "opt", keyTxt = LETTERS[pos], note = "";
+      if (answered) {
+        if (orig === 0) { cls += " is-correct"; keyTxt = "✓"; note = '<span class="note">Correct answer</span>'; }
+        else if (orig === pick) { cls += " is-wrong"; keyTxt = "✕"; note = '<span class="note">Your answer</span>'; }
+        else cls += " dim";
+      }
+      opts += '<li><button type="button" class="' + cls + '" data-orig="' + orig + '"' + (answered ? " disabled" : "") + ">" +
+        '<span class="key" aria-hidden="true">' + keyTxt + "</span>" +
+        '<span class="txt">' + esc(q.options[orig]) + note + "</span></button></li>";
+    });
+
+    var tail;
+    if (answered) {
+      tail = '<div class="feedback ' + (right ? "ok" : "no") + '" role="status"><h3>' + (right ? "Correct!" : "Not quite.") + "</h3><p>" + esc(q.why) + "</p></div>" +
+        '<div class="actions"><button type="button" class="btn" data-act="next">' + (last ? "See my score" : "Next question") + "</button></div>";
+    } else {
+      tail = '<div class="actions"><button type="button" class="linkbtn" data-act="hint">' + (qs.hint ? "Hide hint" : "Show hint") + "</button></div>" +
+        (qs.hint ? '<p class="hint">' + esc(q.hint) + "</p>" : "");
+    }
+
+    app.innerHTML = progressHtml(function (k) {
+      var p = qs.picks[k], c = "seg";
+      if (p !== null) c += p === 0 ? " ok" : " no";
+      else if (k === qs.i) c += " now";
+      return c;
+    }, "Question " + (qs.i + 1) + " of " + Q.length) +
+      '<section class="card" aria-labelledby="prompt">' +
+        '<div class="qhead"><span class="qnum">Question ' + (qs.i + 1) + " of " + Q.length + "</span>" +
+        '<span class="chip k-' + q.part + '">' + PARTS[q.part].label + "</span></div>" +
+        '<h2 class="prompt" id="prompt" tabindex="-1">' + esc(q.prompt) + "</h2>" +
+        (q.context ? '<div class="context"><span class="lab-t">Paragraph</span>' + esc(q.context) + "</div>" : "") +
+        '<ul class="options">' + opts + "</ul>" + tail +
+      "</section>";
+  }
+
+  function renderQResults() {
+    var res = qs.result, total = Q.length;
+    var stats = {};
+    Q.forEach(function (q, k) {
+      var s = stats[q.part] || (stats[q.part] = { right: 0, total: 0 });
+      s.total++;
+      if (qs.picks[k] === 0) s.right++;
+    });
+    var review = "";
+    Q.forEach(function (q, k) {
+      var ok = qs.picks[k] === 0;
+      var detail = ok ? "Correct: " + esc(q.options[0]) : "You chose: " + esc(q.options[qs.picks[k]]) + "<br>Correct: " + esc(q.options[0]);
+      review += '<li><span class="mark ' + (ok ? "ok" : "no") + '" aria-hidden="true">' + (ok ? "✓" : "✕") + "</span>" +
+        '<div><div class="q"><span class="sr-only">' + (ok ? "Right. " : "Wrong. ") + "</span>" + (k + 1) + ". " + esc(q.short) + '</div><div class="detail">' + detail + "</div></div></li>";
+    });
+
+    app.innerHTML = progressHtml(function (k) { return "seg " + (qs.picks[k] === 0 ? "ok" : "no"); }, "Quiz finished") +
+      '<section class="card" aria-labelledby="res-h">' +
+        '<h2 id="res-h" tabindex="-1">Part 1, attempt ' + res.n + "</h2>" +
+        '<div class="score"><div class="pct">' + res.pct + "<sup>%</sup></div>" +
+        '<div class="fraction">' + res.score + " out of " + total + " correct</div></div>" +
+        '<p class="msg">' + msgFor(res.pct) + "</p>" +
+        '<div class="actions"><button type="button" class="btn" data-act="restart">Try again</button>' +
+        '<button type="button" class="btn secondary" data-mode="p">Go to Part 2</button></div>' +
+      "</section>" +
+      partsBlock(stats, "right") +
+      '<section class="card"><h2>Question review</h2><ol class="review">' + review + "</ol></section>" +
+      historyBlock("q", res.n);
+  }
+
+  /* ---------- Part 2 rendering ---------- */
+  function partName(idx) { return PARTS[KEYS[idx]].label; }
+
+  function renderParagraph() {
+    var i = ps.i, para = P[i], order = ps.order[i], labels = ps.labels[i], checked = ps.checked[i];
+    var last = i === P.length - 1;
+    var used = {};
+    labels.forEach(function (l) { if (l !== null) used[l] = true; });
+    var allSet = labels.every(function (l) { return l !== null; });
+
+    var items = "";
+    order.forEach(function (canon, pos) {
+      var text = esc(para.s[canon]);
+      var chosen = labels[pos];
+      var head = '<div class="stxt"><span class="snum" aria-hidden="true">' + (pos + 1) + "</span><span>" + text + "</span></div>";
+      if (!checked) {
+        var btns = "";
+        for (var idx = 0; idx < 4; idx++) {
+          var on = chosen === idx;
+          var cls = "lab" + (on ? " on k-" + KEYS[idx] : "") + (!on && used[idx] ? " used" : "");
+          btns += '<button type="button" class="' + cls + '" data-s="' + pos + '" data-idx="' + idx + '" aria-pressed="' + on + '">' + (on ? "✓ " : "") + partName(idx) + "</button>";
+        }
+        items += '<li class="sent">' + head + '<div class="labs" role="group" aria-label="Label for sentence ' + (pos + 1) + '">' + btns + "</div></li>";
+      } else {
+        var ok = chosen === canon;
+        var verdict = ok
+          ? '<span class="vok">✓ Correct</span><span class="chip k-' + KEYS[canon] + '">' + partName(canon) + "</span>"
+          : '<span class="vno">✕ You chose ' + partName(chosen) + '</span><span class="chip k-' + KEYS[canon] + '">Correct: ' + partName(canon) + "</span>";
+        items += '<li class="sent ' + (ok ? "ok" : "no") + '">' + head + '<div class="verdict">' + verdict + "</div>" +
+          (ok ? "" : '<p class="why">' + esc(REASON[canon]) + "</p>") + "</li>";
+      }
+    });
+
+    var tail;
+    if (!checked) {
+      tail = '<div class="actions"><button type="button" class="btn" data-act="check"' + (allSet ? "" : " disabled") + ">Check my answers</button>" +
+        '<button type="button" class="linkbtn" data-act="phint">' + (ps.hint ? "Hide hint" : "Show hint") + "</button></div>" +
+        '<p class="small">Each label can be used once. Tap a label again to take it off.</p>' +
+        (ps.hint ? '<p class="hint">' + SETS[mode].hint + "</p>" : "");
+    } else {
+      var marks = ps.marks[i], pc = percent(marks, 4);
+      var tone = marks === 4 ? "ok" : marks === 0 ? "no" : "mid";
+      var heading = marks === 4 ? "Perfect!" : marks === 0 ? "Not this time." : "Nearly there.";
+      var ordered = "";
+      for (var k = 0; k < 4; k++) {
+        ordered += '<li><span class="chip k-' + KEYS[k] + '">' + partName(k) + "</span><span>" + esc(para.s[k]) +
+          (para.notes ? '<span class="onote">' + esc(para.notes[k]) + "</span>" : "") + "</span></li>";
+      }
+      tail = '<div class="feedback ' + tone + '" role="status"><h3>' + heading + "</h3><p>" + marks + " of 4 labels correct. This paragraph: " + pc + "%.</p></div>" +
+        '<p class="sub">The paragraph in PEEL order</p><ul class="ordered">' + ordered + "</ul>" +
+        '<div class="actions"><button type="button" class="btn" data-act="pnext">' + (last ? "See my score" : "Next paragraph") + "</button></div>";
+    }
+
+    app.innerHTML = progressHtml(function (k) {
+      var c = "seg";
+      if (ps.checked[k]) c += ps.marks[k] === 4 ? " ok" : ps.marks[k] === 0 ? " no" : " mid";
+      else if (k === i) c += " now";
+      return c;
+    }, "Paragraph " + (i + 1) + " of " + P.length, P.length) +
+      '<section class="card" aria-labelledby="prompt">' +
+        '<div class="qhead"><span class="qnum">Paragraph ' + (i + 1) + " of " + P.length + '</span><span class="chip k-whole">' + esc(para.topic) + "</span></div>" +
+        '<h2 class="prompt" id="prompt" tabindex="-1">Label each sentence of this jumbled paragraph.</h2>' +
+        '<ul class="sents">' + items + "</ul>" + tail +
+      "</section>";
+  }
+
+  function renderPResults() {
+    var res = ps.result, total = res.total;
+    var stats = {};
+    P.forEach(function (para, i) {
+      ps.order[i].forEach(function (canon, pos) {
+        var key = KEYS[canon];
+        var s = stats[key] || (stats[key] = { right: 0, total: 0 });
+        s.total++;
+        if (ps.labels[i][pos] === canon) s.right++;
+      });
+    });
+    var review = "";
+    P.forEach(function (para, i) {
+      var m = ps.marks[i], tone = m === 4 ? "ok" : m === 0 ? "no" : "mid";
+      var missed = [];
+      ps.order[i].forEach(function (canon, pos) { if (ps.labels[i][pos] !== canon) missed.push(partName(canon)); });
+      var detail = missed.length ? "Mixed up: " + missed.join(", ") : "All four labels right";
+      review += '<li><span class="mark ' + tone + '" aria-hidden="true">' + (m === 4 ? "✓" : m === 0 ? "✕" : m) + "</span>" +
+        '<div><div class="q">' + (i + 1) + ". " + esc(para.topic) + " · " + m + " of 4 · " + percent(m, 4) + '%</div><div class="detail">' + detail + "</div></div></li>";
+    });
+
+    app.innerHTML = progressHtml(function (k) { return "seg " + (ps.marks[k] === 4 ? "ok" : ps.marks[k] === 0 ? "no" : "mid"); }, "All paragraphs finished", P.length) +
+      '<section class="card" aria-labelledby="res-h">' +
+        '<h2 id="res-h" tabindex="-1">' + SETS[mode].name + ", attempt " + res.n + "</h2>" +
+        '<div class="score"><div class="pct">' + res.pct + "<sup>%</sup></div>" +
+        '<div class="fraction">' + res.score + " out of " + total + " labels correct</div></div>" +
+        '<p class="msg">' + msgFor(res.pct) + "</p>" +
+        '<div class="actions"><button type="button" class="btn" data-act="prestart">Try again</button>' +
+        (mode === "p"
+          ? '<button type="button" class="btn secondary" data-mode="h">Go to Part 3</button>'
+          : '<button type="button" class="btn secondary" data-mode="p">Back to Part 2</button>' +
+            '<button type="button" class="btn secondary" data-mode="a">Go to Part 4</button>') + "</div>" +
+      "</section>" +
+      partsBlock(stats, "right") +
+      '<section class="card"><h2>Percent for each paragraph</h2><ol class="review">' + review + "</ol></section>" +
+      historyBlock(mode, res.n);
+  }
+
+  /* ---------- Part 4 rendering ---------- */
+  function newA() {
+    return {
+      phase: "work", i: 0, step: 0,
+      picks: A.map(function () { return [null, null, null]; }),
+      order: A.map(function (ex) { return ex.stages.map(function (st) { return shuffle(st.options.map(function (_, k) { return k; })); }); }),
+      text: A.map(function () { return ""; }),
+      revealed: A.map(function () { return false; }),
+      ticks: A.map(function () { return [false, false, false, false]; }),
+      hint: false, result: null
+    };
+  }
+  function aAuto(i) { return an.picks[i].filter(function (p) { return p === 0; }).length; }
+  function aSelf(i) { return an.ticks[i].filter(Boolean).length; }
+  function aTone(i) { var pc = percent(aAuto(i) + aSelf(i), MARKS_PER); return pc >= 70 ? "ok" : pc >= 40 ? "mid" : "no"; }
+  function tickSummary(i) {
+    var n = aSelf(i);
+    return "You ticked " + n + " of 4, so this paragraph is worth " + percent(n, 4) + "%.";
+  }
+
+  function renderAnalysis() {
+    var i = an.i, ex = A[i], step = an.step, last = i === A.length - 1;
+    var head = '<div class="qhead"><span class="qnum">Extract ' + (i + 1) + " of " + A.length + " · Step " + (step + 1) + ' of 4</span>' +
+      '<span class="chip k-whole">' + esc(ex.topic) + "</span></div>";
+    var extract = '<div class="extract"><span class="lab-t">Extract</span><p>' + esc(ex.extract) + "</p></div>" +
+      '<p class="aq"><strong>Question:</strong> ' + esc(ex.question) + "</p>";
+    var sofar = "";
+    if (step >= 1) sofar += '<li><span class="chip k-point">Point</span><span>' + esc(ex.stages[0].options[0]) + "</span></li>";
+    if (step >= 2) sofar += '<li><span class="chip k-evidence">Evidence</span><span>' + esc(ex.stages[1].options[0]) + "</span></li>";
+    if (sofar && step < 3) sofar = '<div class="context"><span class="lab-t">The best Point and Evidence so far</span><ul class="ordered">' + sofar + "</ul></div>";
+    else sofar = "";
+
+    var body;
+    if (step < 3) {
+      var st = ex.stages[step], pick = an.picks[i][step], answered = pick !== null;
+      var opts = "";
+      an.order[i][step].forEach(function (orig, pos) {
+        var cls = "opt", keyTxt = LETTERS[pos], note = "";
+        if (answered) {
+          if (orig === 0) { cls += " is-correct"; keyTxt = "✓"; note = '<span class="note">Best answer</span>'; }
+          else if (orig === pick) { cls += " is-wrong"; keyTxt = "✕"; note = '<span class="note">Your answer</span>'; }
+          else cls += " dim";
+        }
+        opts += '<li><button type="button" class="' + cls + '" data-orig="' + orig + '"' + (answered ? " disabled" : "") + ">" +
+          '<span class="key" aria-hidden="true">' + keyTxt + "</span>" +
+          '<span class="txt">' + esc(st.options[orig]) + note + "</span></button></li>";
+      });
+      var tail = "";
+      if (answered) {
+        var right = pick === 0;
+        tail = '<div class="feedback ' + (right ? "ok" : "no") + '" role="status"><h3>' + (right ? "Correct!" : "Not quite.") + "</h3><p>" + esc(st.why) + "</p></div>" +
+          '<div class="actions"><button type="button" class="btn" data-act="astep">' + (step === 2 ? "Write my own paragraph" : "Next step") + "</button></div>";
+      }
+      body = '<h2 class="prompt" id="prompt" tabindex="-1">' + STAGE_PROMPT[step] + "</h2>" + '<ul class="options">' + opts + "</ul>" + tail;
+    } else if (!an.revealed[i]) {
+      var ready = an.text[i].trim().length >= 30;
+      body = '<h2 class="prompt" id="prompt" tabindex="-1">Write your own PEEL paragraph.</h2>' +
+        '<p class="aq">' + esc(ex.task) + "</p>" +
+        '<label class="sr-only" for="write">Your PEEL paragraph</label>' +
+        '<textarea id="write" rows="7" placeholder="Point, Evidence, Explain, Link...">' + esc(an.text[i]) + "</textarea>" +
+        '<div class="actions"><button type="button" class="btn" data-act="acheck"' + (ready ? "" : " disabled") + ">Check my paragraph</button>" +
+        '<button type="button" class="linkbtn" data-act="ahint">' + (an.hint ? "Hide sentence starters" : "Show sentence starters") + "</button></div>" +
+        '<p class="small">Write at least a couple of sentences to unlock the check.</p>' +
+        (an.hint ? '<p class="hint">' + FRAME_A + "</p>" : "");
+    } else {
+      var model = "";
+      for (var k = 0; k < 4; k++) {
+        model += '<li><span class="chip k-' + KEYS[k] + '">' + partName(k) + "</span><span>" + esc(ex.model[k]) + "</span></li>";
+      }
+      var rows = "";
+      CHECKS.forEach(function (c, t) {
+        rows += '<li><input type="checkbox" class="tick" id="tick-' + t + '" data-t="' + t + '"' + (an.ticks[i][t] ? " checked" : "") + '><label for="tick-' + t + '">' + esc(c) + "</label></li>";
+      });
+      body = '<h2 class="prompt" id="prompt" tabindex="-1">Compare and mark your paragraph.</h2>' +
+        '<p class="sub">Your paragraph</p><div class="mine">' + esc(an.text[i]) + "</div>" +
+        '<p class="sub">A model paragraph</p><ul class="ordered">' + model + "</ul>" +
+        '<p class="small">Your quotation may be different. Compare the structure and the depth of the Explain, not the exact words.</p>' +
+        '<p class="sub">Mark yourself honestly</p><ul class="checks">' + rows + "</ul>" +
+        '<p class="small" id="tick-sum" role="status">' + tickSummary(i) + "</p>" +
+        '<div class="actions"><button type="button" class="btn" data-act="afinish">' + (last ? "See my score" : "Next extract") + "</button></div>";
+    }
+
+    app.innerHTML = progressHtml(function (k) {
+      var c = "seg";
+      if (k < i) c += " " + aTone(k);
+      else if (k === i) c += " now";
+      return c;
+    }, "Extract " + (i + 1) + " of " + A.length, A.length) +
+      '<section class="card" aria-labelledby="prompt">' + head + extract + sofar + body + "</section>";
+  }
+
+  function renderAResults() {
+    var res = an.result, autoT = 0, selfT = 0;
+    var stats = {
+      point: { right: 0, total: A.length }, evidence: { right: 0, total: A.length },
+      explain: { right: 0, total: A.length }, write: { right: 0, total: A.length * 4 }
+    };
+    var review = "";
+    A.forEach(function (ex, i) {
+      var a = aAuto(i), s = aSelf(i), pc = percent(a + s, MARKS_PER);
+      autoT += a; selfT += s;
+      for (var st = 0; st < 3; st++) if (an.picks[i][st] === 0) stats[STAGE_PART[st]].right++;
+      review += '<li><span class="mark ' + aTone(i) + '" aria-hidden="true">' + (i + 1) + '</span><div><div class="q">' + esc(ex.topic) + " · " + pc + '%</div>' +
+        '<div class="detail">Best choices: ' + a + " of 3. My paragraph: " + s + " of 4 ticks.</div></div></li>";
+    });
+    stats.write.right = selfT;
+
+    app.innerHTML = progressHtml(function (k) { return "seg " + aTone(k); }, "All extracts finished", A.length) +
+      '<section class="card" aria-labelledby="res-h">' +
+        '<h2 id="res-h" tabindex="-1">Part 4, attempt ' + res.n + "</h2>" +
+        '<div class="score"><div class="pct">' + res.pct + "<sup>%</sup></div>" +
+        '<div class="fraction">' + res.score + " out of " + res.total + " marks</div></div>" +
+        '<p class="msg">' + msgFor(res.pct) + "</p>" +
+        '<p class="focus-line">Best choices (marked by the page): ' + percent(autoT, A.length * 3) + "%. My paragraphs (marked by me): " + percent(selfT, A.length * 4) + "%.</p>" +
+        '<div class="actions"><button type="button" class="btn" data-act="arestart">Try again</button>' +
+        '<button type="button" class="btn secondary" data-mode="h">Back to Part 3</button></div>' +
+      "</section>" +
+      partsBlock(stats, "marks") +
+      '<section class="card"><h2>Percent for each extract</h2><ol class="review">' + review + "</ol></section>" +
+      historyBlock("a", res.n);
+  }
+
+  /* ---------- Render + navigation ---------- */
+  function render() {
+    if (mode === "q") { if (qs.phase === "quiz") renderQuestion(); else renderQResults(); }
+    else if (mode === "a") { if (an.phase === "work") renderAnalysis(); else renderAResults(); }
+    else { if (ps.phase === "work") renderParagraph(); else renderPResults(); }
+  }
+  function setMode(m) {
+    mode = m;
+    if (SETS[m]) { P = SETS[m].paras; ps = pstates[m]; }
+    ledeEl.textContent = LEDE[m];
+    document.querySelectorAll(".tab").forEach(function (t) {
+      if (t.getAttribute("data-mode") === m) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current");
+    });
+    render();
+  }
+
+  function answerQ(orig) {
+    if (qs.picks[qs.i] !== null) return;
+    qs.picks[qs.i] = orig;
+    qs.hint = false;
+    render();
+    var nx = app.querySelector('[data-act="next"]');
+    if (nx) {
+      nx.focus({ preventScroll: true });
+      var fb = app.querySelector(".feedback");
+      if (fb) fb.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+    }
+  }
+  function nextQ() {
+    if (qs.i < Q.length - 1) {
+      qs.i++; qs.hint = false; render(); focusId("prompt"); scrollTop();
+    } else {
+      var score = qs.picks.filter(function (p) { return p === 0; }).length;
+      qs.result = pushHist("q", score);
+      qs.phase = "results";
+      render(); focusId("res-h"); scrollTop();
+    }
+  }
+
+  function answerA(orig) {
+    var i = an.i, step = an.step;
+    if (step > 2 || an.picks[i][step] !== null) return;
+    an.picks[i][step] = orig;
+    render();
+    var nx = app.querySelector('[data-act="astep"]');
+    if (nx) {
+      nx.focus({ preventScroll: true });
+      var fb = app.querySelector(".feedback");
+      if (fb) fb.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+    }
+  }
+  function finishA() {
+    if (an.i < A.length - 1) {
+      an.i++; an.step = 0; an.hint = false; render(); focusId("prompt"); scrollTop();
+    } else {
+      var total = 0;
+      A.forEach(function (ex, i) { total += aAuto(i) + aSelf(i); });
+      an.result = pushHist("a", total);
+      an.phase = "results";
+      render(); focusId("res-h"); scrollTop();
+    }
+  }
+
+  function assign(pos, idx) {
+    var L = ps.labels[ps.i];
+    if (L[pos] === idx) { L[pos] = null; return; }
+    for (var k = 0; k < 4; k++) if (L[k] === idx) L[k] = null;
+    L[pos] = idx;
+  }
+  function checkP() {
+    var i = ps.i, L = ps.labels[i];
+    if (!L.every(function (l) { return l !== null; })) return;
+    ps.checked[i] = true;
+    ps.hint = false;
+    ps.marks[i] = L.filter(function (l, pos) { return l === ps.order[i][pos]; }).length;
+    render();
+    var nx = app.querySelector('[data-act="pnext"]');
+    if (nx) {
+      nx.focus({ preventScroll: true });
+      var fb = app.querySelector(".feedback");
+      if (fb) fb.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+    }
+  }
+  function nextP() {
+    if (ps.i < P.length - 1) {
+      ps.i++; ps.hint = false; render(); focusId("prompt"); scrollTop();
+    } else {
+      var score = ps.marks.reduce(function (a, b) { return a + b; }, 0);
+      ps.result = pushHist(mode, score);
+      ps.phase = "results";
+      render(); focusId("res-h"); scrollTop();
+    }
+  }
+
+  app.addEventListener("click", function (e) {
+    var opt = e.target.closest(".opt");
+    if (opt && !opt.disabled) {
+      var o = parseInt(opt.getAttribute("data-orig"), 10);
+      if (mode === "a") answerA(o); else answerQ(o);
+      return;
+    }
+
+    var lab = e.target.closest(".lab");
+    if (lab && (mode === "p" || mode === "h") && !ps.checked[ps.i]) {
+      var pos = parseInt(lab.getAttribute("data-s"), 10), idx = parseInt(lab.getAttribute("data-idx"), 10);
+      assign(pos, idx);
+      render();
+      var again = app.querySelector('.lab[data-s="' + pos + '"][data-idx="' + idx + '"]');
+      if (again) again.focus({ preventScroll: true });
+      return;
+    }
+
+    var go = e.target.closest("[data-mode]");
+    if (go) { setMode(go.getAttribute("data-mode")); scrollTop(); return; }
+
+    var btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    var act = btn.getAttribute("data-act");
+    if (act === "hint") { qs.hint = !qs.hint; render(); }
+    else if (act === "next") nextQ();
+    else if (act === "restart") { qs = newQ(); render(); scrollTop(); focusId("prompt"); }
+    else if (act === "phint") { ps.hint = !ps.hint; render(); }
+    else if (act === "check") checkP();
+    else if (act === "pnext") nextP();
+    else if (act === "prestart") { ps = pstates[mode] = newP(P); render(); scrollTop(); focusId("prompt"); }
+    else if (act === "astep") { an.step++; render(); focusId("prompt"); scrollTop(); }
+    else if (act === "acheck") {
+      if (an.text[an.i].trim().length < 30) return;
+      an.revealed[an.i] = true; an.hint = false; render(); focusId("prompt"); scrollTop();
+    }
+    else if (act === "ahint") {
+      an.hint = !an.hint; render();
+      var hb = app.querySelector('[data-act="ahint"]');
+      if (hb) hb.focus({ preventScroll: true });
+    }
+    else if (act === "afinish") finishA();
+    else if (act === "arestart") { an = newA(); render(); scrollTop(); focusId("prompt"); }
+    else if (act === "clear") { hist[mode] = []; saveHist(mode); render(); }
+  });
+
+  app.addEventListener("input", function (e) {
+    if (mode === "a" && e.target.id === "write") {
+      an.text[an.i] = e.target.value;
+      var b = app.querySelector('[data-act="acheck"]');
+      if (b) b.disabled = e.target.value.trim().length < 30;
+    }
+  });
+  app.addEventListener("change", function (e) {
+    var t = e.target;
+    if (mode === "a" && t.classList && t.classList.contains("tick")) {
+      an.ticks[an.i][parseInt(t.getAttribute("data-t"), 10)] = t.checked;
+      var s = document.getElementById("tick-sum");
+      if (s) s.textContent = tickSummary(an.i);
+    }
+  });
+
+  document.querySelector(".tabs").addEventListener("click", function (e) {
+    var t = e.target.closest(".tab");
+    if (t) { setMode(t.getAttribute("data-mode")); scrollTop(); }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (mode !== "q" || qs.phase !== "quiz" || e.ctrlKey || e.metaKey || e.altKey) return;
+    var n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 4 && qs.picks[qs.i] === null) {
+      var orig = qs.order[qs.i][n - 1];
+      if (orig !== undefined) answerQ(orig);
+    }
+  });
+
+  document.getElementById("storage-note").textContent = storageOK
+    ? "Your attempts are saved in this browser only."
+    : "Your attempts are kept for this visit only.";
+
+  qs = newQ();
+  an = newA();
+  pstates = { p: newP(SETS.p.paras), h: newP(SETS.h.paras) };
+  P = SETS.p.paras;
+  ps = pstates.p;
+  setMode("q");
+})();
+</script>
+
+</body></html>
