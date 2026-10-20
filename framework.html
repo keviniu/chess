@@ -1,4 +1,5 @@
-<title>Move Census</title>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>§CIRE MAT</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;600;700&family=Public+Sans:wght@400;500;600&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
@@ -68,6 +69,13 @@ h1, h2, h3, p { margin: 0; }
   font-size: clamp(28px, 5vw, 40px); line-height: 1; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance;
 }
 .top p { color: var(--muted); max-width: 56ch; margin-top: 8px; }
+.brandwrap { position: relative; display: inline-block; max-width: 100%; }
+.brand { cursor: help; text-decoration: underline dotted var(--muted); text-decoration-thickness: 2px; text-underline-offset: 7px; }
+.tip { position: absolute; left: 0; top: 100%; margin-top: 12px; z-index: 20; width: max-content; max-width: min(380px, calc(100vw - 32px)); background: var(--ink); color: var(--paper); padding: 10px 13px; border-radius: 6px; font: 500 14px/1.5 var(--font-body); opacity: 0; visibility: hidden; transform: translateY(-3px); transition: opacity .12s, transform .12s, visibility .12s; pointer-events: none; }
+.tip b { font-family: var(--font-mono); font-weight: 700; color: var(--last); }
+.tipsub { display: block; margin-top: 2px; }
+.brandwrap:hover .tip, .brand:focus + .tip, .brandwrap.open .tip { opacity: 1; visibility: visible; transform: none; }
+@media (prefers-reduced-motion: reduce) { .tip { transition: none; } }
 .tally { display: flex; gap: 20px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
 .tally b { display: block; font-size: 22px; color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
 
@@ -253,7 +261,10 @@ tr.differs td { background: var(--bad-bg); }
 <div class="wrap">
   <header class="top">
     <div>
-      <h1>Move Census</h1>
+      <div class="brandwrap">
+        <h1 class="brand" tabindex="0" aria-describedby="brandTip">§CIRE MAT</h1>
+        <div class="tip" id="brandTip" role="tooltip"><b>S</b>cilicet <b>C</b>andidate <b>I</b>nvestigation <b>R</b>ating <b>E</b>valuation<span class="tipsub"><b>M</b>ove <b>A</b>nalysis <b>T</b>ool</span></div>
+      </div>
       <p>List every legal move, grade it, pick your candidates and judge the position. Save your progress to a file and pick it up where you left off.</p>
     </div>
     <div class="tally" id="tally"></div>
@@ -1241,7 +1252,7 @@ function commentFor(j) {
 function pgnText() {
   var p = S.play, res = p && p.result ? p.result : '*';
   var dt = new Date(), ds = dt.getFullYear() + '.' + ('0' + (dt.getMonth() + 1)).slice(-2) + '.' + ('0' + dt.getDate()).slice(-2);
-  var h = '[Event "Move Census practice"]\n[Date "' + ds + '"]\n';
+  var h = '[Event "CIRE MAT practice"]\n[Date "' + ds + '"]\n';
   if (p) h += '[White "' + (p.color === 'w' ? 'You' : 'Stockfish 8 (skill ' + p.skill + ')') + '"]\n[Black "' + (p.color === 'b' ? 'You' : 'Stockfish 8 (skill ' + p.skill + ')') + '"]\n';
   if (S.startFen !== START) h += '[SetUp "1"]\n[FEN "' + S.startFen + '"]\n';
   h += '[Result "' + res + '"]\n\n';
@@ -1256,7 +1267,7 @@ function pgnText() {
 }
 
 function summaryText() {
-  var lines = ['Move Census summary'];
+  var lines = ['CIRE MAT summary'];
   Object.keys(S.data).map(Number).sort(function (a, b) { return a - b; }).forEach(function (ply) {
     var d = S.data[ply]; if (!d || !d.eng || ply >= S.fens.length) return;
     var a = analyse(d.eng, d); if (!a) return;
@@ -1436,7 +1447,7 @@ function sessionObject() {
 
 function stampName() {
   var d = new Date();
-  return 'move-census-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + '-' + ('0' + d.getHours()).slice(-2) + ('0' + d.getMinutes()).slice(-2) + '.json';
+  return 'cire-mat-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + '-' + ('0' + d.getHours()).slice(-2) + ('0' + d.getMinutes()).slice(-2) + '.json';
 }
 
 function saveName() {
@@ -1508,8 +1519,8 @@ function cleanData(raw) {
 
 function parseSave(text) {
   var o;
-  try { o = JSON.parse(text); } catch (e) { throw new Error('That text is not a Move Census save. It could not be read.'); }
-  if (!o || o.app !== 'move-census' || !o.game || typeof o.game.start !== 'string' || !Array.isArray(o.game.ucis)) throw new Error('That is not a Move Census save file.');
+  try { o = JSON.parse(text); } catch (e) { throw new Error('That text is not a CIRE MAT save. It could not be read.'); }
+  if (!o || o.app !== 'move-census' || !o.game || typeof o.game.start !== 'string' || !Array.isArray(o.game.ucis)) throw new Error('That is not a CIRE MAT save file.');
   if (!new Chess().validate_fen(o.game.start).valid) throw new Error('The saved game has an invalid starting position.');
   var g = new Chess(o.game.start), moves = [], i;
   for (i = 0; i < o.game.ucis.length; i++) {
@@ -1565,6 +1576,13 @@ $('recOnly').addEventListener('change', function () { S.recOnly = $('recOnly').c
 try { var savedName = localStorage.getItem('mc1:name'); if (savedName) $('saveName').value = savedName; } catch (e) {}
 $('saveName').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doSave(); } });
 
+(function () {
+  var w = document.querySelector('.brandwrap'); if (!w) return;
+  w.addEventListener('click', function () { w.classList.toggle('open'); });
+  document.addEventListener('click', function (e) { if (!w.contains(e.target)) w.classList.remove('open'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') w.classList.remove('open'); });
+})();
+
 window.addEventListener('beforeunload', function (e) {
   if (S.dirty && workedCount() > 0) { e.preventDefault(); e.returnValue = ''; }
 });
@@ -1584,3 +1602,5 @@ if (typeof Chess === 'undefined') {
 }
 })();
 </script>
+
+</body></html>
