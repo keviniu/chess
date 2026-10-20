@@ -1,4 +1,3 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>§CIRE MAT</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;600;700&family=Public+Sans:wght@400;500;600&display=swap">
@@ -169,7 +168,21 @@ textarea { width: 100%; min-height: 84px; margin-top: 8px; font: 13px/1.4 var(--
 .chip.g-ok { background: var(--ok-bg); border-color: var(--ok); } .chip.g-ok .sym { color: var(--ok); }
 .chip.g-unsure { background: var(--unsure-bg); border-color: var(--unsure); } .chip.g-unsure .sym { color: var(--unsure); }
 .chip.g-bad { background: var(--bad-bg); border-color: var(--bad); text-decoration: line-through; text-decoration-thickness: 1px; } .chip.g-bad .sym { color: var(--bad); }
+.chip { position: relative; }
 .chip.is-cand { box-shadow: 0 0 0 2px var(--accent); }
+.chip.e-good { box-shadow: inset 0 -6px 0 var(--good); padding-bottom: 8px; }
+.chip.e-ok { box-shadow: inset 0 -6px 0 var(--ok); padding-bottom: 8px; background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--ok) 22%, transparent) 6px 9px); }
+.chip.is-cand.e-good { box-shadow: 0 0 0 2px var(--accent), inset 0 -6px 0 var(--good); }
+.chip.is-cand.e-ok { box-shadow: 0 0 0 2px var(--accent), inset 0 -6px 0 var(--ok); }
+.chip.e-top { outline: 3px solid var(--unsure); outline-offset: 2px; }
+.rk { position: absolute; top: -11px; right: -8px; background: var(--unsure); color: var(--paper); font: 800 11px/16px var(--font-mono); border-radius: 9px; padding: 0 6px; pointer-events: none; }
+.elegend { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+.elegend .lk { display: inline-flex; align-items: center; gap: 6px; }
+.elegend .lkd { flex-basis: 100%; }
+.lkb { display: inline-block; width: 20px; height: 12px; border: 1px solid var(--line); border-radius: 2px; background: var(--raised); }
+.lkb-good { box-shadow: inset 0 -5px 0 var(--good); }
+.lkb-ok { box-shadow: inset 0 -5px 0 var(--ok); }
+.lkr { font: 800 11px/16px var(--font-mono); background: var(--unsure); color: var(--paper); border-radius: 9px; padding: 0 6px; font-style: normal; }
 .cn { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font: 700 10px var(--font-mono); }
 .cfoot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
 .empty { color: var(--muted); font-size: 14px; }
@@ -916,6 +929,7 @@ function renderPalette() {
 
 function renderCensus() {
   var fen = S.fens[S.ply], moves = census(fen), d = pd();
+  var ea = d.eng ? analyse(d.eng, d) : null;
   S.moves = moves;
   var side = sideName(S.ply);
   $('cSub').textContent = moves.length ? moves.length + ' legal moves for ' + side + '. Tap each move with a brush selected.' : '';
@@ -934,11 +948,18 @@ function renderCensus() {
       if (prev && prev !== m.from) chips += '<span class="sep" aria-hidden="true"></span>';
       prev = m.from;
       var gr = d.grades[m.uci], ci = d.cands.indexOf(m.uci);
-      chips += '<button type="button" class="chip' + (gr ? ' g-' + gr : '') + (ci >= 0 ? ' is-cand' : '') + '" data-uci="' + m.uci + '" aria-label="' + esc(m.san) + ', ' + (gr ? GLABEL[gr] : 'not graded') + (ci >= 0 ? ', candidate ' + (ci + 1) : '') + '"><span class="sym">' + (gr ? GSYM[gr] : '') + '</span>' + esc(m.san) + (ci >= 0 ? '<span class="cn">' + (ci + 1) + '</span>' : '') + '</button>';
+      var el = ea ? ea.byUci[m.uci] : null, ecls = '', etip = '', ebadge = '';
+      if (el) {
+        if (el.cls !== 'bad') ecls += ' e-' + el.cls;
+        if (el.rank <= 3) { ecls += ' e-top'; ebadge = '<span class="rk" aria-hidden="true">#' + el.rank + '</span>'; }
+        etip = ' title="Engine: ' + el.cls + ', rank ' + el.rank + ' of ' + ea.L.length + ', ' + fmtEval(el) + (el.loss ? ', loses ' + fmtLoss(el.loss) : '') + '"';
+      }
+      chips += '<button type="button" class="chip' + (gr ? ' g-' + gr : '') + (ci >= 0 ? ' is-cand' : '') + ecls + '"' + etip + ' data-uci="' + m.uci + '" aria-label="' + esc(m.san) + ', ' + (gr ? GLABEL[gr] : 'not graded') + (ci >= 0 ? ', candidate ' + (ci + 1) : '') + (el ? ', engine ' + el.cls + ', rank ' + el.rank : '') + '"><span class="sym">' + (gr ? GSYM[gr] : '') + '</span>' + esc(m.san) + (ci >= 0 ? '<span class="cn">' + (ci + 1) + '</span>' : '') + ebadge + '</button>';
     });
     h += '<div class="crow"><div class="rl">' + PIECE_LET[pc] + '<small>' + PIECE_NAME[pc].toLowerCase() + ', ' + list.length + '</small></div><div class="chips">' + chips + '</div></div>';
   });
-  $('census').innerHTML = h;
+  var legend = ea ? '<p class="elegend"><span class="lk"><i class="lkb lkb-good"></i>engine good</span><span class="lk"><i class="lkb lkb-ok"></i>engine ok</span><span class="lk"><i class="lkr">#1</i>engine top 3</span><span class="lk lkd">from the engine check at depth ' + d.eng.depth + '. Moves the engine rates bad have no marker.</span></p>' : '';
+  $('census').innerHTML = legend + h;
   var graded = moves.filter(function (m) { return d.grades[m.uci]; }).length;
   var isGrade = S.brush !== 'cand' && S.brush !== 'clear' && S.brush !== 'play';
   $('cfoot').innerHTML = '<span>' + graded + ' of ' + moves.length + ' graded</span><span class="sp"></span>' +
@@ -1062,7 +1083,7 @@ function finishRun() {
   A.run = null;
   if (lines.length) { pd(run.ply).eng = { depth: run.depth, lines: lines }; save(); }
   $('engMsg').className = 'msg'; $('engMsg').textContent = '';
-  renderEngine(); renderEngineControls(); renderProgress(); renderMoves(); renderTally(); renderRecord();
+  renderEngine(); renderEngineControls(); renderProgress(); renderMoves(); renderTally(); renderRecord(); renderCensus();
   if (run.onDone) run.onDone();
 }
 
@@ -1602,5 +1623,3 @@ if (typeof Chess === 'undefined') {
 }
 })();
 </script>
-
-</body></html>
