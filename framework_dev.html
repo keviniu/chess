@@ -1,4 +1,4 @@
-<title>Move Census</title>
+<title>§CIRE MAT</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;600;700&family=Public+Sans:wght@400;500;600&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
@@ -68,6 +68,13 @@ h1, h2, h3, p { margin: 0; }
   font-size: clamp(28px, 5vw, 40px); line-height: 1; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance;
 }
 .top p { color: var(--muted); max-width: 56ch; margin-top: 8px; }
+.brandwrap { position: relative; display: inline-block; max-width: 100%; }
+.brand { cursor: help; text-decoration: underline dotted var(--muted); text-decoration-thickness: 2px; text-underline-offset: 7px; }
+.tip { position: absolute; left: 0; top: 100%; margin-top: 12px; z-index: 20; width: max-content; max-width: min(380px, calc(100vw - 32px)); background: var(--ink); color: var(--paper); padding: 10px 13px; border-radius: 6px; font: 500 14px/1.5 var(--font-body); opacity: 0; visibility: hidden; transform: translateY(-3px); transition: opacity .12s, transform .12s, visibility .12s; pointer-events: none; }
+.tip b { font-family: var(--font-mono); font-weight: 700; color: var(--last); }
+.tipsub { display: block; margin-top: 2px; }
+.brandwrap:hover .tip, .brand:focus + .tip, .brandwrap.open .tip { opacity: 1; visibility: visible; transform: none; }
+@media (prefers-reduced-motion: reduce) { .tip { transition: none; } }
 .tally { display: flex; gap: 20px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
 .tally b { display: block; font-size: 22px; color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
 
@@ -161,7 +168,21 @@ textarea { width: 100%; min-height: 84px; margin-top: 8px; font: 13px/1.4 var(--
 .chip.g-ok { background: var(--ok-bg); border-color: var(--ok); } .chip.g-ok .sym { color: var(--ok); }
 .chip.g-unsure { background: var(--unsure-bg); border-color: var(--unsure); } .chip.g-unsure .sym { color: var(--unsure); }
 .chip.g-bad { background: var(--bad-bg); border-color: var(--bad); text-decoration: line-through; text-decoration-thickness: 1px; } .chip.g-bad .sym { color: var(--bad); }
+.chip { position: relative; }
 .chip.is-cand { box-shadow: 0 0 0 2px var(--accent); }
+.chip.e-good { box-shadow: inset 0 -6px 0 var(--good); padding-bottom: 8px; }
+.chip.e-ok { box-shadow: inset 0 -6px 0 var(--ok); padding-bottom: 8px; }
+.chip.is-cand.e-good { box-shadow: 0 0 0 2px var(--accent), inset 0 -6px 0 var(--good); }
+.chip.is-cand.e-ok { box-shadow: 0 0 0 2px var(--accent), inset 0 -6px 0 var(--ok); }
+.chip.e-top { outline: 3px solid var(--unsure); outline-offset: 2px; }
+.rk { position: absolute; top: -11px; right: -8px; background: var(--unsure); color: var(--paper); font: 800 11px/16px var(--font-mono); border-radius: 9px; padding: 0 6px; pointer-events: none; }
+.elegend { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+.elegend .lk { display: inline-flex; align-items: center; gap: 6px; }
+.elegend .lkd { flex-basis: 100%; }
+.lkb { display: inline-block; width: 20px; height: 12px; border: 1px solid var(--line); border-radius: 2px; background: var(--raised); }
+.lkb-good { box-shadow: inset 0 -5px 0 var(--good); }
+.lkb-ok { box-shadow: inset 0 -5px 0 var(--ok); }
+.lkr { font: 800 11px/16px var(--font-mono); background: var(--unsure); color: var(--paper); border-radius: 9px; padding: 0 6px; font-style: normal; }
 .cn { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font: 700 10px var(--font-mono); }
 .cfoot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
 .empty { color: var(--muted); font-size: 14px; }
@@ -244,6 +265,7 @@ tr.differs td { background: var(--bad-bg); }
 .sess b { font-family: var(--font-mono); }
 .sess.unsaved { color: var(--unsure); }
 #sessText { min-height: 96px; }
+.fileline { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
 .fname { display: grid; gap: 4px; margin: 10px 0 2px; }
 .fname label { font-size: 13px; color: var(--muted); }
 .fname input { width: 100%; font: 13px var(--font-mono); background: var(--raised); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; }
@@ -253,7 +275,10 @@ tr.differs td { background: var(--bad-bg); }
 <div class="wrap">
   <header class="top">
     <div>
-      <h1>Move Census</h1>
+      <div class="brandwrap">
+        <h1 class="brand" tabindex="0" aria-describedby="brandTip">§CIRE MAT</h1>
+        <div class="tip" id="brandTip" role="tooltip"><b>S</b>cilicet <b>C</b>andidate <b>I</b>nvestigation <b>R</b>ating <b>E</b>valuation<span class="tipsub"><b>M</b>ove <b>A</b>nalysis <b>T</b>ool</span></div>
+      </div>
       <p>List every legal move, grade it, pick your candidates and judge the position. Save your progress to a file and pick it up where you left off.</p>
     </div>
     <div class="tally" id="tally"></div>
@@ -302,9 +327,11 @@ tr.differs td { background: var(--bad-bg); }
         <div class="fname">
           <label for="saveName">File name</label>
           <input type="text" id="saveName" autocomplete="off" spellcheck="false" maxlength="120" placeholder="Leave blank for a dated name">
+          <p class="fileline" id="fileLine"></p>
         </div>
         <div class="row">
           <button class="btn primary" id="saveBtn" type="button">Save progress to file</button>
+          <button class="btn" id="saveAsBtn" type="button" hidden>Save as…</button>
           <button class="btn" id="openBtn" type="button">Load a saved file</button>
           <input type="file" id="loadFile" accept=".json,application/json" hidden>
         </div>
@@ -434,6 +461,7 @@ var S = {
   dirty: false, savedAt: null, recOnly: false
 };
 var DL = null;      // the downloads capability, when this view offers it
+var FH = null;      // the file chosen for saving (File System Access), when the browser allows it
 var STORE_LAST = 'mc1:last';
 var A = { run: null, searching: false };       // analysis search state
 var PSET = { color: 'w' };                      // colour chosen in the Play card
@@ -641,6 +669,7 @@ function setGame(start, moves, ply, opts) {
   if (opts.key) { S.key = opts.key; S.data = opts.data || {}; }
   else { S.key = 'mc1:' + hash(start + '|' + ucis.join(' ')); restore(); }
   S.dirty = !opts.key && workedCount() > 0; S.savedAt = null;
+  FH = null; lookupHandle();
   writeLast();
   if (!S.play && S.brush === 'play') S.brush = 'good';
   renderAll();
@@ -905,6 +934,7 @@ function renderPalette() {
 
 function renderCensus() {
   var fen = S.fens[S.ply], moves = census(fen), d = pd();
+  var ea = d.eng ? analyse(d.eng, d) : null;
   S.moves = moves;
   var side = sideName(S.ply);
   $('cSub').textContent = moves.length ? moves.length + ' legal moves for ' + side + '. Tap each move with a brush selected.' : '';
@@ -923,11 +953,18 @@ function renderCensus() {
       if (prev && prev !== m.from) chips += '<span class="sep" aria-hidden="true"></span>';
       prev = m.from;
       var gr = d.grades[m.uci], ci = d.cands.indexOf(m.uci);
-      chips += '<button type="button" class="chip' + (gr ? ' g-' + gr : '') + (ci >= 0 ? ' is-cand' : '') + '" data-uci="' + m.uci + '" aria-label="' + esc(m.san) + ', ' + (gr ? GLABEL[gr] : 'not graded') + (ci >= 0 ? ', candidate ' + (ci + 1) : '') + '"><span class="sym">' + (gr ? GSYM[gr] : '') + '</span>' + esc(m.san) + (ci >= 0 ? '<span class="cn">' + (ci + 1) + '</span>' : '') + '</button>';
+      var el = ea ? ea.byUci[m.uci] : null, ecls = '', etip = '', ebadge = '';
+      if (el) {
+        if (el.cls !== 'bad') ecls += ' e-' + el.cls;
+        if (el.rank <= 3) { ecls += ' e-top'; ebadge = '<span class="rk" aria-hidden="true">#' + el.rank + '</span>'; }
+        etip = ' title="Engine: ' + el.cls + ', rank ' + el.rank + ' of ' + ea.L.length + ', ' + fmtEval(el) + (el.loss ? ', loses ' + fmtLoss(el.loss) : '') + '"';
+      }
+      chips += '<button type="button" class="chip' + (gr ? ' g-' + gr : '') + (ci >= 0 ? ' is-cand' : '') + ecls + '"' + etip + ' data-uci="' + m.uci + '" aria-label="' + esc(m.san) + ', ' + (gr ? GLABEL[gr] : 'not graded') + (ci >= 0 ? ', candidate ' + (ci + 1) : '') + (el ? ', engine ' + el.cls + ', rank ' + el.rank : '') + '"><span class="sym">' + (gr ? GSYM[gr] : '') + '</span>' + esc(m.san) + (ci >= 0 ? '<span class="cn">' + (ci + 1) + '</span>' : '') + ebadge + '</button>';
     });
     h += '<div class="crow"><div class="rl">' + PIECE_LET[pc] + '<small>' + PIECE_NAME[pc].toLowerCase() + ', ' + list.length + '</small></div><div class="chips">' + chips + '</div></div>';
   });
-  $('census').innerHTML = h;
+  var legend = ea ? '<p class="elegend"><span class="lk"><i class="lkb lkb-good"></i>engine good</span><span class="lk"><i class="lkb lkb-ok"></i>engine ok</span><span class="lk"><i class="lkr">#1</i>engine top 3</span><span class="lk lkd">from the engine check at depth ' + d.eng.depth + '. Moves the engine rates bad have no marker.</span></p>' : '';
+  $('census').innerHTML = legend + h;
   var graded = moves.filter(function (m) { return d.grades[m.uci]; }).length;
   var isGrade = S.brush !== 'cand' && S.brush !== 'clear' && S.brush !== 'play';
   $('cfoot').innerHTML = '<span>' + graded + ' of ' + moves.length + ' graded</span><span class="sp"></span>' +
@@ -1051,7 +1088,7 @@ function finishRun() {
   A.run = null;
   if (lines.length) { pd(run.ply).eng = { depth: run.depth, lines: lines }; save(); }
   $('engMsg').className = 'msg'; $('engMsg').textContent = '';
-  renderEngine(); renderEngineControls(); renderProgress(); renderMoves(); renderTally(); renderRecord();
+  renderEngine(); renderEngineControls(); renderProgress(); renderMoves(); renderTally(); renderRecord(); renderCensus();
   if (run.onDone) run.onDone();
 }
 
@@ -1241,7 +1278,7 @@ function commentFor(j) {
 function pgnText() {
   var p = S.play, res = p && p.result ? p.result : '*';
   var dt = new Date(), ds = dt.getFullYear() + '.' + ('0' + (dt.getMonth() + 1)).slice(-2) + '.' + ('0' + dt.getDate()).slice(-2);
-  var h = '[Event "Move Census practice"]\n[Date "' + ds + '"]\n';
+  var h = '[Event "CIRE MAT practice"]\n[Date "' + ds + '"]\n';
   if (p) h += '[White "' + (p.color === 'w' ? 'You' : 'Stockfish 8 (skill ' + p.skill + ')') + '"]\n[Black "' + (p.color === 'b' ? 'You' : 'Stockfish 8 (skill ' + p.skill + ')') + '"]\n';
   if (S.startFen !== START) h += '[SetUp "1"]\n[FEN "' + S.startFen + '"]\n';
   h += '[Result "' + res + '"]\n\n';
@@ -1256,7 +1293,7 @@ function pgnText() {
 }
 
 function summaryText() {
-  var lines = ['Move Census summary'];
+  var lines = ['CIRE MAT summary'];
   Object.keys(S.data).map(Number).sort(function (a, b) { return a - b; }).forEach(function (ply) {
     var d = S.data[ply]; if (!d || !d.eng || ply >= S.fens.length) return;
     var a = analyse(d.eng, d); if (!a) return;
@@ -1293,7 +1330,7 @@ function renderTally() {
 
 function renderAll() {
   S.moves = census(S.fens[S.ply]);
-  drawBoard(); renderMoves(); renderPalette(); renderCensus(); renderVerdict(); renderEngine(); renderEngineControls(); renderProgress(); renderTally(); renderPlay(); renderRecord(); renderSession();
+  drawBoard(); renderMoves(); renderPalette(); renderCensus(); renderVerdict(); renderEngine(); renderEngineControls(); renderProgress(); renderTally(); renderPlay(); renderRecord(); renderSession(); renderFileLine();
 }
 
 function goto(ply) {
@@ -1436,7 +1473,7 @@ function sessionObject() {
 
 function stampName() {
   var d = new Date();
-  return 'move-census-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + '-' + ('0' + d.getHours()).slice(-2) + ('0' + d.getMinutes()).slice(-2) + '.json';
+  return 'cire-mat-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + '-' + ('0' + d.getHours()).slice(-2) + ('0' + d.getMinutes()).slice(-2) + '.json';
 }
 
 function saveName() {
@@ -1453,27 +1490,92 @@ function showText(text, why) {
   sessMsg(why, false);
 }
 
-function doSave() {
+var HAS_FS = typeof window.showSaveFilePicker === 'function';
+var HAS_OPEN = typeof window.showOpenFilePicker === 'function';
+function fileTypes() { return [{ description: 'Chess Candidate save', accept: { 'application/json': ['.json'] } }]; }
+
+function idbOpen() {
+  return new Promise(function (res, rej) {
+    var r = indexedDB.open('cc-files', 1);
+    r.onupgradeneeded = function () { r.result.createObjectStore('h'); };
+    r.onsuccess = function () { res(r.result); };
+    r.onerror = function () { rej(r.error); };
+  });
+}
+function rememberHandle(h) {
+  var key = S.key;
+  try { idbOpen().then(function (db) { db.transaction('h', 'readwrite').objectStore('h').put(h, key); }).catch(function () {}); } catch (e) {}
+}
+function lookupHandle() {
+  var key = S.key;
+  try {
+    idbOpen().then(function (db) {
+      var q = db.transaction('h').objectStore('h').get(key);
+      q.onsuccess = function () { if (q.result && S.key === key && !FH) { FH = q.result; renderFileLine(); } };
+    }).catch(function () {});
+  } catch (e) {}
+}
+
+function renderFileLine() {
+  var el = $('fileLine'), b = $('saveAsBtn'); if (!el) return;
+  var fs = HAS_FS && !DL;
+  b.hidden = !fs;
+  if (DL) el.textContent = 'You will be asked to confirm the file name when you save.';
+  else if (fs) el.textContent = FH ? 'Saving to ' + FH.name + '. Save overwrites that file. Save as lets you pick another place.' : 'No file chosen yet. The first save asks where to put it, and later saves update that same file.';
+  else el.textContent = 'This browser saves into its downloads folder and may add (1) to repeat names. Chrome or Edge can let you choose the folder and overwrite one file.';
+}
+
+function dlFallback(text) {
+  var name = saveName(), started = false;
+  try {
+    var url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    var a = document.createElement('a');
+    a.href = url; a.download = name; a.style.display = 'none';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    started = true;
+  } catch (e) { started = false; }
+  $('sessText').value = text;
+  if (started) {
+    if (!window.claude) { S.dirty = false; S.savedAt = new Date(); renderSession(); }
+    sessMsg('Asked your browser to download ' + name + '. Check your downloads folder. If nothing arrived, open "Copy or paste instead of a file" below and copy the text into a .json file.');
+  } else showText(text, 'This view cannot save a file directly. Copy the text below into a new file ending in .json, using any text editor.');
+}
+
+async function ensureWritable(h) {
+  if (h.queryPermission) {
+    var q = await h.queryPermission({ mode: 'readwrite' });
+    if (q !== 'granted' && h.requestPermission) q = await h.requestPermission({ mode: 'readwrite' });
+    if (q !== 'granted') { var e = new Error('no permission'); e.name = 'NotAllowedError'; throw e; }
+  }
+}
+
+async function fsSave(text, n, asNew) {
+  var h = FH;
+  try {
+    if (!h || asNew) h = await window.showSaveFilePicker({ suggestedName: saveName(), types: fileTypes() });
+    else await ensureWritable(h);
+    var w = await h.createWritable(); await w.write(text); await w.close();
+    FH = h; rememberHandle(h);
+    $('saveName').value = h.name.replace(/\.json$/i, '');
+    S.dirty = false; S.savedAt = new Date();
+    sessMsg('Saved ' + n + ' position' + (n === 1 ? '' : 's') + ' to ' + h.name + '.');
+    renderSession(); renderFileLine();
+  } catch (err) {
+    var nm = err && err.name;
+    if (nm === 'AbortError') { sessMsg('Save cancelled. Your work is still kept in this browser.'); return; }
+    if (nm === 'NotAllowedError') { sessMsg('This page was not allowed to write to that file. Press Save as to choose a file.', true); return; }
+    if (FH && !asNew) { FH = null; renderFileLine(); sessMsg('The earlier file could not be written (' + (nm || 'error') + '). Press Save as to choose where to save.', true); return; }
+    sessMsg('Could not save to a chosen file (' + (nm || 'error') + '). Downloading a copy instead.', true);
+    dlFallback(text);
+  }
+}
+
+function doSave(asNew) {
   var obj = sessionObject(), n = Object.keys(obj.data).length;
   if (!n) { sessMsg('Nothing to save yet. Grade a position or pick a candidate first.', true); return; }
   var text = JSON.stringify(obj);
-  var fallback = function () {
-    var name = saveName(), started = false;
-    try {
-      var url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-      var a = document.createElement('a');
-      a.href = url; a.download = name; a.style.display = 'none';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-      started = true;
-    } catch (e) { started = false; }
-    $('sessText').value = text;
-    if (started) {
-      if (!window.claude) { S.dirty = false; S.savedAt = new Date(); renderSession(); }
-      sessMsg('Asked your browser to download ' + name + '. Check your downloads folder. If nothing arrived, open "Copy or paste instead of a file" below and copy the text into a .json file.');
-    } else showText(text, 'This view cannot save a file directly. Copy the text below into a new file ending in .json, using any text editor.');
-  };
-  if (!DL) { fallback(); return; }
+  if (!DL) { if (HAS_FS) { fsSave(text, n, !!asNew); return; } dlFallback(text); return; }
   DL.save({ filename: saveName(), data: text }).then(function () {
     S.dirty = false; S.savedAt = new Date();
     sessMsg('Saved ' + n + ' position' + (n === 1 ? '' : 's') + '. Keep the file somewhere safe.');
@@ -1482,7 +1584,7 @@ function doSave() {
     var c = err && err.code;
     if (c === 'declined') sessMsg('Save cancelled. Your work is still kept in this browser.');
     else if (c === 'rate_limited') sessMsg('A save prompt is already open. Answer it or wait a moment, then try again.', true);
-    else fallback();
+    else dlFallback(text);
   });
 }
 
@@ -1508,8 +1610,8 @@ function cleanData(raw) {
 
 function parseSave(text) {
   var o;
-  try { o = JSON.parse(text); } catch (e) { throw new Error('That text is not a Move Census save. It could not be read.'); }
-  if (!o || o.app !== 'move-census' || !o.game || typeof o.game.start !== 'string' || !Array.isArray(o.game.ucis)) throw new Error('That is not a Move Census save file.');
+  try { o = JSON.parse(text); } catch (e) { throw new Error('That text is not a CIRE MAT save. It could not be read.'); }
+  if (!o || o.app !== 'move-census' || !o.game || typeof o.game.start !== 'string' || !Array.isArray(o.game.ucis)) throw new Error('That is not a CIRE MAT save file.');
   if (!new Chess().validate_fen(o.game.start).valid) throw new Error('The saved game has an invalid starting position.');
   var g = new Chess(o.game.start), moves = [], i;
   for (i = 0; i < o.game.ucis.length; i++) {
@@ -1532,11 +1634,25 @@ function loadSave(text) {
     var n = workedCount();
     renderSession();
     sessMsg('Loaded ' + s.moves.length + ' moves and your work on ' + n + ' position' + (n === 1 ? '' : 's') + '. You are back at ' + plyLabel(S.ply) + '. Use the game list or the record below to look back over earlier moves.');
-  } catch (e) { sessMsg(e.message, true); }
+    return true;
+  } catch (e) { sessMsg(e.message, true); return false; }
 }
 
-$('saveBtn').addEventListener('click', doSave);
-$('openBtn').addEventListener('click', function () { $('loadFile').click(); });
+$('saveBtn').addEventListener('click', function () { doSave(false); });
+$('saveAsBtn').addEventListener('click', function () { doSave(true); });
+$('openBtn').addEventListener('click', async function () {
+  if (HAS_OPEN && !DL) {
+    try {
+      var hs = await window.showOpenFilePicker({ types: fileTypes(), multiple: false });
+      var h = hs[0], text = await (await h.getFile()).text();
+      if (loadSave(text)) { FH = h; rememberHandle(h); $('saveName').value = h.name.replace(/\.json$/i, ''); renderFileLine(); }
+    } catch (err) {
+      if (!err || err.name !== 'AbortError') sessMsg('That file could not be opened (' + ((err && err.name) || 'error') + '). Try again, or paste the text under "Copy or paste instead of a file".', true);
+    }
+    return;
+  }
+  $('loadFile').click();
+});
 $('loadFile').addEventListener('change', function () {
   var f = $('loadFile').files && $('loadFile').files[0];
   if (!f) return;
@@ -1565,10 +1681,17 @@ $('recOnly').addEventListener('change', function () { S.recOnly = $('recOnly').c
 try { var savedName = localStorage.getItem('mc1:name'); if (savedName) $('saveName').value = savedName; } catch (e) {}
 $('saveName').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doSave(); } });
 
+(function () {
+  var w = document.querySelector('.brandwrap'); if (!w) return;
+  w.addEventListener('click', function () { w.classList.toggle('open'); });
+  document.addEventListener('click', function (e) { if (!w.contains(e.target)) w.classList.remove('open'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') w.classList.remove('open'); });
+})();
+
 window.addEventListener('beforeunload', function (e) {
   if (S.dirty && workedCount() > 0) { e.preventDefault(); e.returnValue = ''; }
 });
-try { if (window.claude && window.claude.use) window.claude.use('downloads').then(function (d) { DL = d || null; }, function () { DL = null; }); } catch (e) {}
+try { if (window.claude && window.claude.use) window.claude.use('downloads').then(function (d) { DL = d || null; renderFileLine(); }, function () { DL = null; renderFileLine(); }); } catch (e) {}
 
 /* ---------- start ---------- */
 
