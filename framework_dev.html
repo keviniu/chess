@@ -210,6 +210,8 @@ h3 { font: 600 12px var(--font-mono); text-transform: uppercase; letter-spacing:
 .econtrols label { font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
 .econtrols input[type=range] { width: 150px; accent-color: var(--accent); }
 #dval { font: 700 13px var(--font-mono); min-width: 2ch; }
+.need { font-size: 13px; color: var(--ink); margin-top: 10px; padding-left: 10px; border-left: 3px solid var(--unsure); }
+.need:empty { display: none; }
 .hint { font-size: 13px; color: var(--muted); margin-top: 8px; max-width: 70ch; }
 .bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 10px; }
 .bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .2s; }
@@ -279,7 +281,7 @@ tr.differs td { background: var(--bad-bg); }
         <h1 class="brand" tabindex="0" aria-describedby="brandTip">§CIRE MAT</h1>
         <div class="tip" id="brandTip" role="tooltip"><b>S</b>cilicet <b>C</b>andidate <b>I</b>nvestigation <b>R</b>ating <b>E</b>valuation<span class="tipsub"><b>M</b>ove <b>A</b>nalysis <b>T</b>ool</span></div>
       </div>
-      <p>Every legal move is listed for you. Grade them, pick your candidates and give your own evaluation of the position. Save your progress to a file and pick it up where you left off.</p>
+      <p>Listed is every legal move, grade them, pick your candidates and judge your evaluation. Save your progress to a file and pick it up where you left off.</p>
     </div>
     <div class="tally" id="tally"></div>
   </header>
@@ -394,11 +396,12 @@ tr.differs td { background: var(--bad-bg); }
       <section class="card" id="s3" aria-labelledby="h3c">
         <header><span class="stepno">3</span><h2 id="h3c">Engine check</h2><span class="sub">Stockfish 8, running in this page</span></header>
         <div class="econtrols">
-          <label for="depth">Depth <input type="range" id="depth" min="8" max="20" value="12"> <span id="dval">12</span></label>
+          <label for="depth">Depth <input type="range" id="depth" min="16" max="28" value="20"> <span id="dval">20</span></label>
           <button class="btn primary" id="runBtn" type="button">Run engine on this position</button>
           <button class="btn" id="stopBtn" type="button" hidden>Stop</button>
         </div>
-        <p class="hint">Do your own census first. Depth 12 is quick in a browser. The article suggests 17 or 18 for a proper check, which can take a few minutes here.</p>
+        <p class="hint">Do your own census first. Depth 20 can take a long time in a browser, and each level above it takes roughly twice as long. Lower the slider for a quicker look. The article suggests 17 or 18 for a proper check.</p>
+        <p class="need" id="runNeed" role="status"></p>
         <div class="bar" id="bar" hidden><i id="barI"></i></div>
         <p class="msg" id="engMsg"></p>
         <div id="engOut"></div>
@@ -980,7 +983,7 @@ function refocus(uci) {
 
 function refreshAfterData(uci) {
   save();
-  renderCensus(); renderVerdict(); renderEngine(); renderMoves(); renderTally(); renderRecord(); renderPlay(); drawBoard();
+  renderCensus(); renderVerdict(); renderEngine(); renderEngineControls(); renderMoves(); renderTally(); renderRecord(); renderPlay(); drawBoard();
   refocus(uci);
 }
 
@@ -1160,7 +1163,13 @@ function renderProgress() {
 
 function renderEngineControls() {
   var busy = !!A.run;
-  $('runBtn').disabled = busy || !S.moves.length;
+  var dd = pd(), ungraded = S.moves.filter(function (m) { return !dd.grades[m.uci]; }).length, noCand = !dd.cands.length;
+  var ready = S.moves.length > 0 && !ungraded && !noCand;
+  $('runBtn').disabled = busy || !ready;
+  var need = [];
+  if (S.moves.length && ungraded) need.push('grade the ' + ungraded + ' move' + (ungraded === 1 ? '' : 's') + ' not graded yet');
+  if (S.moves.length && noCand) need.push('pick at least one candidate');
+  $('runNeed').textContent = need.length && !busy ? 'To run the engine, ' + need.join(' and ') + '.' : '';
   $('stopBtn').hidden = !busy;
   if (!busy) $('bar').hidden = true;
   renderRecordButtons();
