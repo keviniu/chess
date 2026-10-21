@@ -171,7 +171,7 @@ textarea { width: 100%; min-height: 84px; margin-top: 8px; font: 13px/1.4 var(--
 .chip { position: relative; }
 .chip.is-cand { box-shadow: 0 0 0 2px var(--accent); }
 .chip.e-good { box-shadow: inset 0 -6px 0 var(--good); padding-bottom: 8px; }
-.chip.e-ok { box-shadow: inset 0 -6px 0 var(--ok); padding-bottom: 8px; background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--ok) 22%, transparent) 6px 9px); }
+.chip.e-ok { box-shadow: inset 0 -6px 0 var(--ok); padding-bottom: 8px; }
 .chip.is-cand.e-good { box-shadow: 0 0 0 2px var(--accent), inset 0 -6px 0 var(--good); }
 .chip.is-cand.e-ok { box-shadow: 0 0 0 2px var(--accent), inset 0 -6px 0 var(--ok); }
 .chip.e-top { outline: 3px solid var(--unsure); outline-offset: 2px; }
@@ -265,6 +265,7 @@ tr.differs td { background: var(--bad-bg); }
 .sess b { font-family: var(--font-mono); }
 .sess.unsaved { color: var(--unsure); }
 #sessText { min-height: 96px; }
+.fileline { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
 .fname { display: grid; gap: 4px; margin: 10px 0 2px; }
 .fname label { font-size: 13px; color: var(--muted); }
 .fname input { width: 100%; font: 13px var(--font-mono); background: var(--raised); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; }
@@ -278,7 +279,7 @@ tr.differs td { background: var(--bad-bg); }
         <h1 class="brand" tabindex="0" aria-describedby="brandTip">§CIRE MAT</h1>
         <div class="tip" id="brandTip" role="tooltip"><b>S</b>cilicet <b>C</b>andidate <b>I</b>nvestigation <b>R</b>ating <b>E</b>valuation<span class="tipsub"><b>M</b>ove <b>A</b>nalysis <b>T</b>ool</span></div>
       </div>
-      <p>List every legal move, grade it, pick your candidates and judge the position. Save your progress to a file and pick it up where you left off.</p>
+      <p>Every legal move is listed for you. Grade them, pick your candidates and give your own evaluation of the position. Save your progress to a file and pick it up where you left off.</p>
     </div>
     <div class="tally" id="tally"></div>
   </header>
@@ -326,9 +327,11 @@ tr.differs td { background: var(--bad-bg); }
         <div class="fname">
           <label for="saveName">File name</label>
           <input type="text" id="saveName" autocomplete="off" spellcheck="false" maxlength="120" placeholder="Leave blank for a dated name">
+          <p class="fileline" id="fileLine"></p>
         </div>
         <div class="row">
           <button class="btn primary" id="saveBtn" type="button">Save progress to file</button>
+          <button class="btn" id="saveAsBtn" type="button" hidden>Save as…</button>
           <button class="btn" id="openBtn" type="button">Load a saved file</button>
           <input type="file" id="loadFile" accept=".json,application/json" hidden>
         </div>
@@ -458,6 +461,7 @@ var S = {
   dirty: false, savedAt: null, recOnly: false
 };
 var DL = null;      // the downloads capability, when this view offers it
+var FH = null;      // the file chosen for saving (File System Access), when the browser allows it
 var STORE_LAST = 'mc1:last';
 var A = { run: null, searching: false };       // analysis search state
 var PSET = { color: 'w' };                      // colour chosen in the Play card
@@ -665,6 +669,7 @@ function setGame(start, moves, ply, opts) {
   if (opts.key) { S.key = opts.key; S.data = opts.data || {}; }
   else { S.key = 'mc1:' + hash(start + '|' + ucis.join(' ')); restore(); }
   S.dirty = !opts.key && workedCount() > 0; S.savedAt = null;
+  FH = null; lookupHandle();
   writeLast();
   if (!S.play && S.brush === 'play') S.brush = 'good';
   renderAll();
@@ -1325,7 +1330,7 @@ function renderTally() {
 
 function renderAll() {
   S.moves = census(S.fens[S.ply]);
-  drawBoard(); renderMoves(); renderPalette(); renderCensus(); renderVerdict(); renderEngine(); renderEngineControls(); renderProgress(); renderTally(); renderPlay(); renderRecord(); renderSession();
+  drawBoard(); renderMoves(); renderPalette(); renderCensus(); renderVerdict(); renderEngine(); renderEngineControls(); renderProgress(); renderTally(); renderPlay(); renderRecord(); renderSession(); renderFileLine();
 }
 
 function goto(ply) {
@@ -1485,27 +1490,92 @@ function showText(text, why) {
   sessMsg(why, false);
 }
 
-function doSave() {
+var HAS_FS = typeof window.showSaveFilePicker === 'function';
+var HAS_OPEN = typeof window.showOpenFilePicker === 'function';
+function fileTypes() { return [{ description: 'Chess Candidate save', accept: { 'application/json': ['.json'] } }]; }
+
+function idbOpen() {
+  return new Promise(function (res, rej) {
+    var r = indexedDB.open('cc-files', 1);
+    r.onupgradeneeded = function () { r.result.createObjectStore('h'); };
+    r.onsuccess = function () { res(r.result); };
+    r.onerror = function () { rej(r.error); };
+  });
+}
+function rememberHandle(h) {
+  var key = S.key;
+  try { idbOpen().then(function (db) { db.transaction('h', 'readwrite').objectStore('h').put(h, key); }).catch(function () {}); } catch (e) {}
+}
+function lookupHandle() {
+  var key = S.key;
+  try {
+    idbOpen().then(function (db) {
+      var q = db.transaction('h').objectStore('h').get(key);
+      q.onsuccess = function () { if (q.result && S.key === key && !FH) { FH = q.result; renderFileLine(); } };
+    }).catch(function () {});
+  } catch (e) {}
+}
+
+function renderFileLine() {
+  var el = $('fileLine'), b = $('saveAsBtn'); if (!el) return;
+  var fs = HAS_FS && !DL;
+  b.hidden = !fs;
+  if (DL) el.textContent = 'You will be asked to confirm the file name when you save.';
+  else if (fs) el.textContent = FH ? 'Saving to ' + FH.name + '. Save overwrites that file. Save as lets you pick another place.' : 'No file chosen yet. The first save asks where to put it, and later saves update that same file.';
+  else el.textContent = 'This browser saves into its downloads folder and may add (1) to repeat names. Chrome or Edge can let you choose the folder and overwrite one file.';
+}
+
+function dlFallback(text) {
+  var name = saveName(), started = false;
+  try {
+    var url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    var a = document.createElement('a');
+    a.href = url; a.download = name; a.style.display = 'none';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    started = true;
+  } catch (e) { started = false; }
+  $('sessText').value = text;
+  if (started) {
+    if (!window.claude) { S.dirty = false; S.savedAt = new Date(); renderSession(); }
+    sessMsg('Asked your browser to download ' + name + '. Check your downloads folder. If nothing arrived, open "Copy or paste instead of a file" below and copy the text into a .json file.');
+  } else showText(text, 'This view cannot save a file directly. Copy the text below into a new file ending in .json, using any text editor.');
+}
+
+async function ensureWritable(h) {
+  if (h.queryPermission) {
+    var q = await h.queryPermission({ mode: 'readwrite' });
+    if (q !== 'granted' && h.requestPermission) q = await h.requestPermission({ mode: 'readwrite' });
+    if (q !== 'granted') { var e = new Error('no permission'); e.name = 'NotAllowedError'; throw e; }
+  }
+}
+
+async function fsSave(text, n, asNew) {
+  var h = FH;
+  try {
+    if (!h || asNew) h = await window.showSaveFilePicker({ suggestedName: saveName(), types: fileTypes() });
+    else await ensureWritable(h);
+    var w = await h.createWritable(); await w.write(text); await w.close();
+    FH = h; rememberHandle(h);
+    $('saveName').value = h.name.replace(/\.json$/i, '');
+    S.dirty = false; S.savedAt = new Date();
+    sessMsg('Saved ' + n + ' position' + (n === 1 ? '' : 's') + ' to ' + h.name + '.');
+    renderSession(); renderFileLine();
+  } catch (err) {
+    var nm = err && err.name;
+    if (nm === 'AbortError') { sessMsg('Save cancelled. Your work is still kept in this browser.'); return; }
+    if (nm === 'NotAllowedError') { sessMsg('This page was not allowed to write to that file. Press Save as to choose a file.', true); return; }
+    if (FH && !asNew) { FH = null; renderFileLine(); sessMsg('The earlier file could not be written (' + (nm || 'error') + '). Press Save as to choose where to save.', true); return; }
+    sessMsg('Could not save to a chosen file (' + (nm || 'error') + '). Downloading a copy instead.', true);
+    dlFallback(text);
+  }
+}
+
+function doSave(asNew) {
   var obj = sessionObject(), n = Object.keys(obj.data).length;
   if (!n) { sessMsg('Nothing to save yet. Grade a position or pick a candidate first.', true); return; }
   var text = JSON.stringify(obj);
-  var fallback = function () {
-    var name = saveName(), started = false;
-    try {
-      var url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-      var a = document.createElement('a');
-      a.href = url; a.download = name; a.style.display = 'none';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-      started = true;
-    } catch (e) { started = false; }
-    $('sessText').value = text;
-    if (started) {
-      if (!window.claude) { S.dirty = false; S.savedAt = new Date(); renderSession(); }
-      sessMsg('Asked your browser to download ' + name + '. Check your downloads folder. If nothing arrived, open "Copy or paste instead of a file" below and copy the text into a .json file.');
-    } else showText(text, 'This view cannot save a file directly. Copy the text below into a new file ending in .json, using any text editor.');
-  };
-  if (!DL) { fallback(); return; }
+  if (!DL) { if (HAS_FS) { fsSave(text, n, !!asNew); return; } dlFallback(text); return; }
   DL.save({ filename: saveName(), data: text }).then(function () {
     S.dirty = false; S.savedAt = new Date();
     sessMsg('Saved ' + n + ' position' + (n === 1 ? '' : 's') + '. Keep the file somewhere safe.');
@@ -1514,7 +1584,7 @@ function doSave() {
     var c = err && err.code;
     if (c === 'declined') sessMsg('Save cancelled. Your work is still kept in this browser.');
     else if (c === 'rate_limited') sessMsg('A save prompt is already open. Answer it or wait a moment, then try again.', true);
-    else fallback();
+    else dlFallback(text);
   });
 }
 
@@ -1564,11 +1634,25 @@ function loadSave(text) {
     var n = workedCount();
     renderSession();
     sessMsg('Loaded ' + s.moves.length + ' moves and your work on ' + n + ' position' + (n === 1 ? '' : 's') + '. You are back at ' + plyLabel(S.ply) + '. Use the game list or the record below to look back over earlier moves.');
-  } catch (e) { sessMsg(e.message, true); }
+    return true;
+  } catch (e) { sessMsg(e.message, true); return false; }
 }
 
-$('saveBtn').addEventListener('click', doSave);
-$('openBtn').addEventListener('click', function () { $('loadFile').click(); });
+$('saveBtn').addEventListener('click', function () { doSave(false); });
+$('saveAsBtn').addEventListener('click', function () { doSave(true); });
+$('openBtn').addEventListener('click', async function () {
+  if (HAS_OPEN && !DL) {
+    try {
+      var hs = await window.showOpenFilePicker({ types: fileTypes(), multiple: false });
+      var h = hs[0], text = await (await h.getFile()).text();
+      if (loadSave(text)) { FH = h; rememberHandle(h); $('saveName').value = h.name.replace(/\.json$/i, ''); renderFileLine(); }
+    } catch (err) {
+      if (!err || err.name !== 'AbortError') sessMsg('That file could not be opened (' + ((err && err.name) || 'error') + '). Try again, or paste the text under "Copy or paste instead of a file".', true);
+    }
+    return;
+  }
+  $('loadFile').click();
+});
 $('loadFile').addEventListener('change', function () {
   var f = $('loadFile').files && $('loadFile').files[0];
   if (!f) return;
@@ -1607,7 +1691,7 @@ $('saveName').addEventListener('keydown', function (e) { if (e.key === 'Enter') 
 window.addEventListener('beforeunload', function (e) {
   if (S.dirty && workedCount() > 0) { e.preventDefault(); e.returnValue = ''; }
 });
-try { if (window.claude && window.claude.use) window.claude.use('downloads').then(function (d) { DL = d || null; }, function () { DL = null; }); } catch (e) {}
+try { if (window.claude && window.claude.use) window.claude.use('downloads').then(function (d) { DL = d || null; renderFileLine(); }, function () { DL = null; renderFileLine(); }); } catch (e) {}
 
 /* ---------- start ---------- */
 
