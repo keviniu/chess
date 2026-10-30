@@ -210,6 +210,8 @@ h3 { font: 600 12px var(--font-mono); text-transform: uppercase; letter-spacing:
 .econtrols label { font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
 .econtrols input[type=range] { width: 150px; accent-color: var(--accent); }
 #dval { font: 700 13px var(--font-mono); min-width: 2ch; }
+.need { font-size: 13px; color: var(--ink); margin-top: 10px; padding-left: 10px; border-left: 3px solid var(--unsure); }
+.need:empty { display: none; }
 .hint { font-size: 13px; color: var(--muted); margin-top: 8px; max-width: 70ch; }
 .bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 10px; }
 .bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .2s; }
@@ -381,24 +383,25 @@ tr.differs td { background: var(--bad-bg); }
             <p class="warn" id="candWarn" hidden></p>
           </div>
           <div>
-            <h3 id="stLabel">Position status</h3>
+            <h3 id="stLabel">Judge position status</h3>
             <div class="status" id="status" role="group" aria-labelledby="stLabel"></div>
           </div>
         </div>
         <div class="note">
           <label for="noteIn">Your reasoning, in words (optional)</label>
-          <textarea id="noteIn" placeholder="Material is level, White has more space on the queenside, so..."></textarea>
+          <textarea id="noteIn" placeholder="Material is level, White has more space on the queenside, so White has a small advantage, etc."></textarea>
         </div>
       </section>
 
       <section class="card" id="s3" aria-labelledby="h3c">
         <header><span class="stepno">3</span><h2 id="h3c">Engine check</h2><span class="sub">Stockfish 8, running in this page</span></header>
         <div class="econtrols">
-          <label for="depth">Depth <input type="range" id="depth" min="16" max="28" value="20"> <span id="dval">20</span></label>
+          <label for="depth">Depth <input type="range" id="depth" min="12" max="24" value="14"> <span id="dval">14</span></label>
           <button class="btn primary" id="runBtn" type="button">Run engine on this position</button>
           <button class="btn" id="stopBtn" type="button" hidden>Stop</button>
         </div>
-        <p class="hint">Do your own census first. Depth 20 can take a long time in a browser, and each level above it takes roughly twice as long. Lower the slider for a quicker look. The article suggests 17 or 18 for a proper check.</p>
+        <p class="hint">Do your own census first. Depth 14 is a quick first look. Each level deeper takes roughly twice as long in a browser, so depth 20 or more can run for a long time. The article suggests 17 or 18 for a proper check. The elapsed time is shown while it runs and stays with the result.</p>
+        <p class="need" id="runNeed" role="status"></p>
         <div class="bar" id="bar" hidden><i id="barI"></i></div>
         <p class="msg" id="engMsg"></p>
         <div id="engOut"></div>
@@ -565,6 +568,13 @@ function fmtEval(l) {
   return (p > 0 ? '+' : p < 0 ? '−' : '') + Math.abs(p).toFixed(2);
 }
 function fmtLoss(cp) { return cp >= 1500 ? '10+' : (cp / 100).toFixed(2); }
+function fmtTime(sec) {
+  sec = Math.max(0, Math.round(sec));
+  if (sec < 60) return sec + 's';
+  var m = Math.floor(sec / 60), s = sec % 60;
+  if (m < 60) return m + 'm ' + ('0' + s).slice(-2) + 's';
+  return Math.floor(m / 60) + 'h ' + ('0' + (m % 60)).slice(-2) + 'm ' + ('0' + s).slice(-2) + 's';
+}
 
 function analyse(eng, d) {
   var L = eng && eng.lines; if (!L || !L.length) return null;
@@ -968,7 +978,7 @@ function renderCensus() {
   var graded = moves.filter(function (m) { return d.grades[m.uci]; }).length;
   var isGrade = S.brush !== 'cand' && S.brush !== 'clear' && S.brush !== 'play';
   $('cfoot').innerHTML = '<span>' + graded + ' of ' + moves.length + ' graded</span><span class="sp"></span>' +
-    '<button type="button" class="btn small" id="fillBtn"' + (isGrade ? '' : ' disabled') + '>Fill the rest as ' + (isGrade ? GLABEL[S.brush] : 'graded') + '</button>' +
+    '<button type="button" class="btn small" id="fillBtn">Fill the rest as unsure</button>' +
     '<button type="button" class="btn small" id="clearBtn">Clear this position</button>';
 }
 
@@ -980,7 +990,7 @@ function refocus(uci) {
 
 function refreshAfterData(uci) {
   save();
-  renderCensus(); renderVerdict(); renderEngine(); renderMoves(); renderTally(); renderRecord(); renderPlay(); drawBoard();
+  renderCensus(); renderVerdict(); renderEngine(); renderEngineControls(); renderMoves(); renderTally(); renderRecord(); renderPlay(); drawBoard();
   refocus(uci);
 }
 
@@ -1028,7 +1038,7 @@ function renderVerdict() {
   var bad = d.cands.filter(function (u) { return d.grades[u] === 'bad'; }).map(sanOf);
   var w = $('candWarn');
   if (bad.length) { w.hidden = false; w.textContent = 'You graded ' + bad.join(', ') + ' as bad but also picked it as a candidate.'; } else w.hidden = true;
-  $('stLabel').textContent = 'Position status, from ' + sideName(S.ply) + "'s side";
+  $('stLabel').textContent = 'Judge position status, from ' + sideName(S.ply) + "'s side";
   var sh = '';
   STATUS.forEach(function (s) {
     sh += '<button type="button" class="stbtn" data-status="' + s.k + '" aria-pressed="' + (d.status === s.k) + '">' + s.label + '<small>' + s.range + '</small></button>';
@@ -1086,8 +1096,9 @@ function finishRun() {
     return { uci: l.uci, san: san[0] || l.uci, type: l.type, v: l.v, val: val, pv: san.join(' ') };
   });
   A.run = null;
-  if (lines.length) { pd(run.ply).eng = { depth: run.depth, lines: lines }; save(); }
-  $('engMsg').className = 'msg'; $('engMsg').textContent = '';
+  var secs = run.t0 ? (Date.now() - run.t0) / 1000 : 0;
+  if (lines.length) { pd(run.ply).eng = { depth: run.depth, secs: secs, lines: lines }; save(); }
+  $('engMsg').className = 'msg'; $('engMsg').textContent = lines.length ? 'Finished at depth ' + run.depth + ' in ' + fmtTime(secs) + '.' : '';
   renderEngine(); renderEngineControls(); renderProgress(); renderMoves(); renderTally(); renderRecord(); renderCensus();
   if (run.onDone) run.onDone();
 }
@@ -1102,6 +1113,9 @@ function startRun(ply, depth, onDone) {
   renderEngine(); renderEngineControls(); renderProgress();
   AN.start(function () {
     if (A.run !== run) return;
+    run.t0 = Date.now();
+    if (A.tick) clearInterval(A.tick);
+    A.tick = setInterval(function () { if (!A.run) { clearInterval(A.tick); A.tick = null; return; } renderProgress(); }, 1000);
     A.searching = true;
     AN.post('ucinewgame');
     AN.post('setoption name MultiPV value ' + run.n);
@@ -1133,7 +1147,7 @@ function reviewTargets() {
 function startReview() {
   if (A.run) return;
   var q = reviewTargets(); if (!q.length) return;
-  S.review = { queue: q, total: q.length, done: 0, depth: +$('depth').value };
+  S.review = { queue: q, total: q.length, done: 0, depth: +$('depth').value, t0: Date.now() };
   reviewNext();
 }
 function reviewNext() {
@@ -1155,12 +1169,18 @@ function renderProgress() {
   $('barI').style.width = Math.min(100, Math.round(run.depth / run.want * 100)) + '%';
   $('engMsg').className = 'msg';
   var what = S.review ? 'Reviewing move ' + (S.review.done + 1) + ' of ' + S.review.total + ' (' + plyLabel(run.ply) + ' ' + (S.sans[run.ply] || '') + ')' : 'Searching all ' + run.n + ' moves';
-  $('engMsg').textContent = A.searching ? what + '. Depth ' + run.depth + ' of ' + run.want + '.' : 'Starting Stockfish...';
+  $('engMsg').textContent = A.searching ? what + '. Depth ' + run.depth + ' of ' + run.want + '. Elapsed ' + fmtTime((Date.now() - (run.t0 || Date.now())) / 1000) + (S.review ? '. Review total ' + fmtTime((Date.now() - S.review.t0) / 1000) : '') + '.' : 'Starting Stockfish...';
 }
 
 function renderEngineControls() {
   var busy = !!A.run;
-  $('runBtn').disabled = busy || !S.moves.length;
+  var dd = pd(), ungraded = S.moves.filter(function (m) { return !dd.grades[m.uci]; }).length, noCand = !dd.cands.length;
+  var ready = S.moves.length > 0 && !ungraded && !noCand;
+  $('runBtn').disabled = busy || !ready;
+  var need = [];
+  if (S.moves.length && ungraded) need.push('grade the ' + ungraded + ' move' + (ungraded === 1 ? '' : 's') + ' not graded yet');
+  if (S.moves.length && noCand) need.push('pick at least one candidate');
+  $('runNeed').textContent = need.length && !busy ? 'To run the engine, ' + need.join(' and ') + '.' : '';
   $('stopBtn').hidden = !busy;
   if (!busy) $('bar').hidden = true;
   renderRecordButtons();
@@ -1197,7 +1217,7 @@ function renderEngine() {
   } else {
     h += '<li>Set a position status in step 2 to compare it with the engine’s ' + statusLabel(a.band).toLowerCase() + ' (' + fmtEval(best) + ').</li>';
   }
-  h += '<li>Searched to depth ' + d.eng.depth + '. Scores are from ' + sideName(S.ply) + '’s side. Rankings can shuffle at other depths.</li></ul>';
+  h += '<li>Searched to depth ' + d.eng.depth + (d.eng.secs ? ' in ' + fmtTime(d.eng.secs) : '') + '. Scores are from ' + sideName(S.ply) + '’s side. Rankings can shuffle at other depths.</li></ul>';
   h += '<div class="tablewrap"><table><thead><tr><th>#</th><th>Move</th><th style="text-align:right">Eval</th><th style="text-align:right">Loss</th><th style="text-align:center">You</th><th>Engine</th><th>Line</th></tr></thead><tbody>';
   a.L.forEach(function (l) {
     var gr = d.grades[l.uci], ci = d.cands.indexOf(l.uci), differs = false;
@@ -1386,7 +1406,7 @@ $('census').addEventListener('click', function (e) { var b = e.target.closest('[
 $('cfoot').addEventListener('click', function (e) {
   var d = pd();
   if (e.target.id === 'fillBtn') {
-    S.moves.forEach(function (m) { if (!d.grades[m.uci]) d.grades[m.uci] = S.brush; });
+    S.moves.forEach(function (m) { if (!d.grades[m.uci]) d.grades[m.uci] = 'unsure'; });
   } else if (e.target.id === 'clearBtn') {
     d.grades = {}; d.cands = []; d.status = null; d.note = ''; d.eng = null;
     $('noteIn').dataset.ply = '';
@@ -1601,7 +1621,7 @@ function cleanData(raw) {
     if (d.eng && Array.isArray(d.eng.lines)) {
       var lines = d.eng.lines.filter(function (l) { return l && typeof l.uci === 'string' && UCI_RE.test(l.uci) && isFinite(+l.v) && isFinite(+l.val); })
         .map(function (l) { return { uci: l.uci, san: String(l.san || l.uci), type: l.type === 'mate' ? 'mate' : 'cp', v: +l.v, val: +l.val, pv: String(l.pv || '') }; });
-      if (lines.length) eng = { depth: +d.eng.depth || 0, lines: lines };
+      if (lines.length) eng = { depth: +d.eng.depth || 0, secs: Math.max(0, +d.eng.secs || 0), lines: lines };
     }
     out[k] = { grades: g, cands: c, status: statusIdx(d.status) >= 0 ? d.status : null, note: typeof d.note === 'string' ? d.note.slice(0, 5000) : '', eng: eng };
   });
