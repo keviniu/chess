@@ -1089,7 +1089,7 @@ function renderVerdict() {
   var bad = d.cands.filter(function (u) { return d.grades[u] === 'bad'; }).map(sanOf);
   var w = $('candWarn');
   if (bad.length) { w.hidden = false; w.textContent = 'You graded ' + bad.join(', ') + ' as bad but also picked it as a candidate.'; } else w.hidden = true;
-  $('stLabel').textContent = 'Judge position (' + sideName(S.ply) + "'s side)";
+  $('stLabel').textContent = 'Judge position, from ' + sideName(S.ply) + "'s side";
   var sh = '';
   STATUS.forEach(function (s) {
     sh += '<button type="button" class="stbtn" data-status="' + s.k + '" aria-pressed="' + (d.status === s.k) + '">' + s.label + '<small>' + s.range + '</small></button>';
@@ -1117,8 +1117,10 @@ AN.onLine = function (line) {
     var dm = / depth (\d+)/.exec(line), mp = / multipv (\d+)/.exec(line), sc = / score (cp|mate) (-?\d+)/.exec(line), pv = / pv (.+)$/.exec(line);
     if (!dm || !mp || !sc || !pv) return;
     var depth = +dm[1], k = +mp[1], moves = pv[1].trim().split(/\s+/);
-    var prev = run.lines[k];
-    if (!prev || depth >= prev.depth) run.lines[k] = { depth: depth, type: sc[1], v: +sc[2], uci: moves[0], pv: moves };
+    // keyed by the move itself, not the multipv slot: slots change move between depths, so a slot that
+    // missed an update could hold a stale move and hide another one
+    var key = moves[0], prev = run.lines[key];
+    if (!prev || depth >= prev.depth) run.lines[key] = { depth: depth, type: sc[1], v: +sc[2], uci: moves[0], pv: moves, k: k };
     if (depth > run.depth) { run.depth = depth; renderProgress(); }
     return;
   }
@@ -1139,13 +1141,14 @@ function pvToSan(fen, pv) {
 }
 
 function finishRun() {
-  var run = A.run, keys = Object.keys(run.lines).map(Number).sort(function (a, b) { return a - b; });
-  var lines = keys.map(function (k) {
-    var l = run.lines[k];
+  var run = A.run;
+  var lines = Object.keys(run.lines).map(function (key) {
+    var l = run.lines[key];
     var val = l.type === 'mate' ? (l.v > 0 ? 1 : -1) * (100000 - Math.abs(l.v) * 100) : l.v;
     var san = pvToSan(run.fen, l.pv);
-    return { uci: l.uci, san: san[0] || l.uci, type: l.type, v: l.v, val: val, pv: san.join(' ') };
-  });
+    return { uci: l.uci, san: san[0] || l.uci, type: l.type, v: l.v, val: val, pv: san.join(' '), k: l.k };
+  }).sort(function (a, b) { return (b.val - a.val) || (a.k - b.k); });
+  lines.forEach(function (l) { delete l.k; });
   A.run = null;
   var secs = run.t0 ? (Date.now() - run.t0) / 1000 : 0;
   if (lines.length) { pd(run.ply).eng = { depth: run.depth, secs: secs, lines: lines }; save(); }
