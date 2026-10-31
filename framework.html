@@ -139,6 +139,8 @@ h1, h2, h3, p { margin: 0; }
 .mv[aria-current="true"] .star { color: inherit; }
 .mv .frac { font-size: 10px; opacity: .8; }
 details { margin-top: 12px; }
+.fillas { font-size: 13px; color: var(--muted); }
+.fillsel { font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
 .about { padding: 0; }
 .about details { margin: 0; }
 .about summary { padding: 14px 16px; font-family: var(--font-display); font-stretch: 112%; font-variation-settings: "wdth" 112; font-weight: 750; font-size: 15px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink); }
@@ -494,7 +496,7 @@ function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
 var S = {
-  startFen: START, fens: [START], sans: [], ucis: [], ply: 0, flip: false, brush: 'good',
+  startFen: START, fens: [START], sans: [], ucis: [], ply: 0, flip: false, brush: 'unsure',
   data: {}, hover: null, moves: [], key: 'mc1', play: null, sel: null, promo: null, review: null, playMsg: '', playErr: false,
   dirty: false, savedAt: null, recOnly: false
 };
@@ -730,7 +732,7 @@ function setGame(start, moves, ply, opts) {
   S.dirty = !opts.key && workedCount() > 0; S.savedAt = null;
   FH = null; lookupHandle();
   writeLast();
-  if (!S.play && S.brush === 'play') S.brush = 'good';
+  if (!S.play && S.brush === 'play') S.brush = 'unsure';
   renderAll();
 }
 
@@ -1027,7 +1029,7 @@ function renderCensus() {
   var graded = moves.filter(function (m) { return d.grades[m.uci]; }).length;
   var isGrade = S.brush !== 'cand' && S.brush !== 'clear' && S.brush !== 'play';
   $('cfoot').innerHTML = '<span>' + graded + ' of ' + moves.length + ' graded</span><span class="sp"></span>' +
-    '<button type="button" class="btn small" id="fillBtn">Fill the rest as unsure</button>' +
+    '<button type="button" class="btn small" id="fillBtn">Fill the rest as ' + (isGrade ? GLABEL[S.brush] : 'unsure') + '</button>' +
     '<button type="button" class="btn small" id="clearBtn">Clear this position</button>';
 }
 
@@ -1455,7 +1457,8 @@ $('census').addEventListener('click', function (e) { var b = e.target.closest('[
 $('cfoot').addEventListener('click', function (e) {
   var d = pd();
   if (e.target.id === 'fillBtn') {
-    S.moves.forEach(function (m) { if (!d.grades[m.uci]) d.grades[m.uci] = 'unsure'; });
+    var fa = (S.brush !== 'cand' && S.brush !== 'clear' && S.brush !== 'play') ? S.brush : 'unsure';
+    S.moves.forEach(function (m) { if (!d.grades[m.uci]) d.grades[m.uci] = fa; });
   } else if (e.target.id === 'clearBtn') {
     d.grades = {}; d.cands = []; d.status = null; d.note = ''; d.eng = null;
     $('noteIn').dataset.ply = '';
