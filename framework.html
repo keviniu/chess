@@ -139,6 +139,9 @@ h1, h2, h3, p { margin: 0; }
 .mv[aria-current="true"] .star { color: inherit; }
 .mv .frac { font-size: 10px; opacity: .8; }
 details { margin-top: 12px; }
+.bh-btns { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+#boardWrap.free svg { outline: 3px solid var(--accent); outline-offset: -3px; }
 .fillas { font-size: 13px; color: var(--muted); }
 .fillsel { font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
 .about { padding: 0; }
@@ -304,10 +307,14 @@ tr.differs td { background: var(--bad-bg); }
       <section class="card" aria-label="Board">
         <div class="board-head">
           <div id="posLabel"></div>
-          <button class="btn small" id="flipBtn" type="button">Flip board</button>
+          <div class="bh-btns">
+            <button class="btn small" id="flipBtn" type="button">Flip board</button>
+            <button class="btn small" id="freeBtn" type="button" aria-pressed="false" title="Move the pieces freely to try out ideas. Switch off to return to the game.">♞ Free move: <span id="freeState">off</span></button>
+          </div>
         </div>
         <div id="boardWrap"></div>
         <div id="promoRow" hidden></div>
+        <p class="pstatus" id="freeNote" hidden>Free move is on. Move any piece for either side to try out ideas. Nothing here is graded or saved. Use ‹ to take back a move and « to go back to where you started. Switch Free move off to return to the game position.</p>
         <div class="navrow">
           <button class="btn" id="firstBtn" type="button" aria-label="Start of game">«</button>
           <button class="btn" id="prevBtn" type="button" aria-label="Previous position">‹</button>
@@ -733,6 +740,7 @@ function setGame(start, moves, ply, opts) {
   FH = null; lookupHandle();
   writeLast();
   if (!S.play && S.brush === 'play') S.brush = 'unsure';
+  fmOff(); fmUI();
   renderAll();
 }
 
@@ -855,6 +863,7 @@ function playUci(uci) {
 }
 
 function onBoardClick(e) {
+  if (FM.on) { fmClick(e); return; }
   if (!canMove()) return;
   var svg = $('boardWrap').querySelector('svg'); if (!svg) return;
   var r = svg.getBoundingClientRect();
@@ -876,15 +885,67 @@ function onBoardClick(e) {
   renderPlay(); drawBoard();
 }
 
+/* ---------- free move (sandbox, never touches the game or your grades) ---------- */
+
+var FM = { on: false, fen: '', stack: [], last: null, sel: null, promo: null, moves: [] };
+function fmSet(fen) { FM.fen = fen; FM.moves = new Chess(fen).moves({ verbose: true }); }
+function fmUI() {
+  $('freeBtn').setAttribute('aria-pressed', String(FM.on));
+  $('freeState').textContent = FM.on ? 'on' : 'off';
+  $('freeNote').hidden = !FM.on;
+}
+function fmOff() { FM.on = false; FM.stack = []; FM.sel = null; FM.promo = null; FM.last = null; FM.moves = []; }
+function fmToggle() {
+  if (FM.on) fmOff();
+  else { FM.on = true; FM.stack = []; FM.sel = null; FM.promo = null; FM.last = S.ply > 0 ? S.ucis[S.ply - 1] : null; fmSet(S.fens[S.ply]); }
+  S.hover = null; S.sel = null; S.promo = null;
+  fmUI(); renderPlay(); drawBoard();
+}
+function fmCommit(from, to, promo) {
+  var g = new Chess(FM.fen), r = g.move({ from: from, to: to, promotion: promo });
+  if (!r) return;
+  FM.stack.push({ fen: FM.fen, last: FM.last });
+  FM.last = from + to; FM.sel = null; FM.promo = null; fmSet(g.fen());
+  renderPlay(); drawBoard();
+}
+function fmUndo() {
+  var p = FM.stack.pop(); if (!p) return;
+  FM.last = p.last; FM.sel = null; FM.promo = null; fmSet(p.fen);
+  renderPlay(); drawBoard();
+}
+function fmBase() {
+  if (!FM.stack.length) return;
+  var first = FM.stack[0]; FM.stack = [];
+  FM.last = first.last; FM.sel = null; FM.promo = null; fmSet(first.fen);
+  renderPlay(); drawBoard();
+}
+function fmClick(e) {
+  var svg = $('boardWrap').querySelector('svg'); if (!svg) return;
+  var r = svg.getBoundingClientRect();
+  var col = Math.floor((e.clientX - r.left) / r.width * 8), row = Math.floor((e.clientY - r.top) / r.height * 8);
+  if (col < 0 || col > 7 || row < 0 || row > 7) return;
+  var file = S.flip ? 7 - col : col, rank = S.flip ? row + 1 : 8 - row;
+  var sq = 'abcdefgh'.charAt(file) + rank;
+  if (FM.sel) {
+    var hits = FM.moves.filter(function (m) { return m.from === FM.sel && m.to === sq; });
+    if (hits.length === 1) { fmCommit(hits[0].from, hits[0].to, hits[0].promotion); return; }
+    if (hits.length > 1) { FM.promo = { from: FM.sel, to: sq }; renderPlay(); drawBoard(); return; }
+  }
+  var own = FM.moves.some(function (m) { return m.from === sq; });
+  FM.sel = own && FM.sel !== sq ? sq : null; FM.promo = null;
+  renderPlay(); drawBoard();
+}
+
 /* ---------- board ---------- */
 
 function drawBoard() {
-  var fen = S.fens[S.ply], g = new Chess(fen), bd = g.board(), fl = S.flip;
+  var fen = FM.on ? FM.fen : S.fens[S.ply], g = new Chess(fen), bd = g.board(), fl = S.flip;
+  var sel = FM.on ? FM.sel : S.sel, mvs = FM.on ? FM.moves : S.moves, turnName = g.turn() === 'w' ? 'White' : 'Black';
   function X(f) { return (fl ? 7 - f : f) * 100; }
   function Y(r) { return (fl ? 7 - r : r) * 100; }      // r: 0 is rank 8
-  var last = S.ply > 0 ? S.ucis[S.ply - 1] : null;
-  var live = canMove();
-  var s = '<svg viewBox="0 0 800 800" role="img" aria-label="Chess position, ' + esc(sideName(S.ply)) + ' to move"><defs><marker id="ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path class="ahead" d="M0 0L10 5L0 10z"/></marker></defs>';
+  var last = FM.on ? FM.last : (S.ply > 0 ? S.ucis[S.ply - 1] : null);
+  var live = FM.on || canMove();
+  var s = '<svg viewBox="0 0 800 800" role="img" aria-label="Chess position, ' + esc(turnName) + ' to move"><defs><marker id="ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path class="ahead" d="M0 0L10 5L0 10z"/></marker></defs>';
   var r, f;
   for (r = 0; r < 8; r++) for (f = 0; f < 8; f++) {
     var dark = ((f + (8 - r)) % 2) === 1;
@@ -893,23 +954,23 @@ function drawBoard() {
   if (last) [last.slice(0, 2), last.slice(2, 4)].forEach(function (sq) {
     s += '<rect class="sq-last" x="' + X(fileOf(sq)) + '" y="' + Y(7 - rankOf(sq)) + '" width="100" height="100"/>';
   });
-  if (live && S.sel) s += '<rect class="sq-sel" x="' + X(fileOf(S.sel)) + '" y="' + Y(7 - rankOf(S.sel)) + '" width="100" height="100"/>';
+  if (live && sel) s += '<rect class="sq-sel" x="' + X(fileOf(sel)) + '" y="' + Y(7 - rankOf(sel)) + '" width="100" height="100"/>';
   for (f = 0; f < 8; f++) s += '<text class="coord" x="' + (X(f) + 84) + '" y="792">' + 'abcdefgh'.charAt(f) + '</text>';
   for (r = 0; r < 8; r++) s += '<text class="coord" x="6" y="' + (Y(r) + 22) + '">' + (8 - r) + '</text>';
   for (r = 0; r < 8; r++) for (f = 0; f < 8; f++) {
     var p = bd[r][f];
     if (p) s += '<text class="pc ' + p.color + '" x="' + (X(f) + 50) + '" y="' + (Y(r) + 76) + '">' + GLYPH[p.type] + '︎</text>';
   }
-  if (live && S.sel) {
+  if (live && sel) {
     var seen = {};
-    S.moves.forEach(function (m) {
-      if (m.from !== S.sel || seen[m.to]) return;
+    mvs.forEach(function (m) {
+      if (m.from !== sel || seen[m.to]) return;
       seen[m.to] = 1;
       var cx = X(fileOf(m.to)) + 50, cy = Y(7 - rankOf(m.to)) + 50, cap = m.flags.indexOf('c') >= 0 || m.flags.indexOf('e') >= 0;
       s += cap ? '<circle class="tcap" cx="' + cx + '" cy="' + cy + '" r="42"/>' : '<circle class="tdot" cx="' + cx + '" cy="' + cy + '" r="15"/>';
     });
   }
-  if (S.hover) {
+  if (S.hover && !FM.on) {
     var a = S.hover.slice(0, 2), b = S.hover.slice(2, 4);
     var ax = X(fileOf(a)) + 50, ay = Y(7 - rankOf(a)) + 50, bx = X(fileOf(b)) + 50, by = Y(7 - rankOf(b)) + 50;
     var dx = bx - ax, dy = by - ay, len = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -919,8 +980,14 @@ function drawBoard() {
   }
   s += '</svg>';
   $('boardWrap').innerHTML = s;
-  $('boardWrap').className = live ? 'playable' : '';
+  $('boardWrap').className = (live ? 'playable' : '') + (FM.on ? ' free' : '');
   var N = S.sans.length;
+  if (FM.on) {
+    $('posLabel').textContent = turnName + ' to move · free move' + (g.game_over() ? ' (game over)' : '');
+    $('firstBtn').disabled = $('prevBtn').disabled = !FM.stack.length;
+    $('nextBtn').disabled = $('lastBtn').disabled = true;
+    return;
+  }
   $('posLabel').textContent = sideName(S.ply) + ' to move · ' + plyLabel(S.ply) + (S.ply === N && N > 0 ? ' (after the last move)' : '');
   $('firstBtn').disabled = $('prevBtn').disabled = S.ply === 0;
   $('nextBtn').disabled = $('lastBtn').disabled = S.ply === N;
@@ -950,7 +1017,7 @@ function renderPlay() {
   var el = $('playStatus');
   el.textContent = msg; el.className = 'pstatus' + (err && S.playMsg ? ' err' : '');
   var pr = $('promoRow');
-  if (S.promo && canMove()) {
+  if (FM.on ? !!FM.promo : (S.promo && canMove())) {
     pr.hidden = false;
     pr.innerHTML = '<div class="seg" role="group" aria-label="Promote to">' + ['q', 'r', 'b', 'n'].map(function (k) { return '<button type="button" data-promo="' + k + '" aria-label="Promote to ' + PIECE_NAME[k].toLowerCase() + '">' + GLYPH[k] + '︎ ' + PIECE_LET[k] + '</button>'; }).join('') + '</div>';
   } else { pr.hidden = true; pr.innerHTML = ''; }
@@ -1410,6 +1477,7 @@ function renderAll() {
 function goto(ply) {
   var N = S.sans.length;
   ply = Math.max(0, Math.min(N, ply));
+  if (FM.on) { fmOff(); fmUI(); if (ply === S.ply) { renderAll(); return; } }
   if (ply === S.ply) return;
   S.ply = ply; S.hover = null; S.sel = null; S.promo = null; S.playMsg = '';
   writeLast();
@@ -1423,15 +1491,17 @@ function setHover(uci) {
 
 $('moveList').addEventListener('click', function (e) { var b = e.target.closest('[data-ply]'); if (b) goto(+b.dataset.ply); });
 $('recOut').addEventListener('click', function (e) { var b = e.target.closest('[data-ply]'); if (b) { goto(+b.dataset.ply); window.scrollTo({ top: 0, behavior: 'smooth' }); } });
-$('firstBtn').addEventListener('click', function () { goto(0); });
-$('prevBtn').addEventListener('click', function () { goto(S.ply - 1); });
-$('nextBtn').addEventListener('click', function () { goto(S.ply + 1); });
-$('lastBtn').addEventListener('click', function () { goto(S.sans.length); });
+$('firstBtn').addEventListener('click', function () { if (FM.on) fmBase(); else goto(0); });
+$('prevBtn').addEventListener('click', function () { if (FM.on) fmUndo(); else goto(S.ply - 1); });
+$('nextBtn').addEventListener('click', function () { if (!FM.on) goto(S.ply + 1); });
+$('lastBtn').addEventListener('click', function () { if (!FM.on) goto(S.sans.length); });
+$('freeBtn').addEventListener('click', fmToggle);
 $('flipBtn').addEventListener('click', function () { S.flip = !S.flip; drawBoard(); });
 $('boardWrap').addEventListener('click', onBoardClick);
 
 $('promoRow').addEventListener('click', function (e) {
-  var b = e.target.closest('[data-promo]'); if (!b || !S.promo) return;
+  var b = e.target.closest('[data-promo]'); if (!b || !(FM.on ? FM.promo : S.promo)) return;
+  if (FM.on) { var fp = FM.promo; if (fp) fmCommit(fp.from, fp.to, b.dataset.promo); return; }
   var pr = S.promo; commitMove(pr.from, pr.to, b.dataset.promo);
 });
 
