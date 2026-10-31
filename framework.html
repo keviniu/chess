@@ -1,4 +1,4 @@
-<title>§CIRE MAT</title>
+<title>§CIRE Move Analysis Tool</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;600;700&family=Public+Sans:wght@400;500;600&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
@@ -139,6 +139,17 @@ h1, h2, h3, p { margin: 0; }
 .mv[aria-current="true"] .star { color: inherit; }
 .mv .frac { font-size: 10px; opacity: .8; }
 details { margin-top: 12px; }
+.about { padding: 0; }
+.about details { margin: 0; }
+.about summary { padding: 14px 16px; font-family: var(--font-display); font-stretch: 112%; font-variation-settings: "wdth" 112; font-weight: 750; font-size: 15px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink); }
+.about .abody { padding: 0 16px 16px; font-size: 14px; line-height: 1.55; }
+.about .abody p { margin: 0 0 10px; }
+.about .abody a { color: var(--accent); }
+.about dl.acro { display: grid; grid-template-columns: 2.2em 1fr; gap: 2px 8px; margin: 0 0 12px; }
+.about dl.acro dt { font-family: var(--font-mono); font-weight: 700; color: var(--accent); }
+.about dl.acro dd { margin: 0; }
+.about dl.acro .gap { grid-column: 1 / -1; height: 6px; }
+.about .todo { color: var(--muted); font-style: italic; }
 summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); }
 textarea { width: 100%; min-height: 84px; margin-top: 8px; font: 13px/1.4 var(--font-mono); background: var(--raised); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 8px; resize: vertical; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
@@ -278,7 +289,7 @@ tr.differs td { background: var(--bad-bg); }
   <header class="top">
     <div>
       <div class="brandwrap">
-        <h1 class="brand" tabindex="0" aria-describedby="brandTip">§CIRE MAT</h1>
+        <h1 class="brand" tabindex="0" aria-describedby="brandTip">§CIRE Move Analysis Tool</h1>
         <div class="tip" id="brandTip" role="tooltip"><b>S</b>cilicet <b>C</b>andidate <b>I</b>nvestigation <b>R</b>ating <b>E</b>valuation<span class="tipsub"><b>M</b>ove <b>A</b>nalysis <b>T</b>ool</span></div>
       </div>
       <p>Listed is every legal move, grade them, pick your candidates and judge your evaluation. Save your progress to a file and pick it up where you left off.</p>
@@ -364,6 +375,30 @@ tr.differs td { background: var(--bad-bg); }
           <p class="msg" id="loadMsg"></p>
         </details>
       </section>
+
+      <section class="card about" id="aboutCard" aria-label="About §CIRE MAT">
+        <details id="aboutDetails">
+          <summary>About §CIRE MAT</summary>
+          <div class="abody">
+            <p>§CIRE MAT was developed as a collaboration by Kevin Iu &amp; Jason Turvey, based on Jason's article "How to analyse your own games", published on <a href="http://schemingmind.com/" target="_blank" rel="noopener">schemingmind.com</a> and <a href="http://bracknellchessclub.co.uk/" target="_blank" rel="noopener">bracknellchessclub.co.uk</a>.</p>
+            <p>§CIRE MAT stands for:</p>
+            <dl class="acro">
+              <dt>§</dt><dd>Scilicet (that is to say)</dd>
+              <dt>C</dt><dd>Candidate</dd>
+              <dt>I</dt><dd>Investigation</dd>
+              <dt>R</dt><dd>Rating</dd>
+              <dt>E</dt><dd>Evaluation</dd>
+              <div class="gap"></div>
+              <dt>M</dt><dd>Move</dd>
+              <dt>A</dt><dd>Analysis</dd>
+              <dt>T</dt><dd>Tool</dd>
+            </dl>
+            <p>§CIRE is based on the Latin word <i>scire</i>, which means "to know", and is pronounced the same way, i.e. SKEE-reh.</p>
+            <p>This program is entirely free. If you think it is good and would like to make a small donation for our efforts, please buy us a coffee here: <span class="todo">[link to be added]</span></p>
+            <p>Feedback and comments are welcome. Contact us at: <span class="todo">[contact to be added]</span></p>
+          </div>
+        </details>
+      </section>
     </aside>
 
     <main class="right">
@@ -400,7 +435,7 @@ tr.differs td { background: var(--bad-bg); }
           <button class="btn primary" id="runBtn" type="button">Run engine on this position</button>
           <button class="btn" id="stopBtn" type="button" hidden>Stop</button>
         </div>
-        <p class="hint">Do your own census first. Depth 14 is a quick first look. Each level deeper takes roughly twice as long in a browser, so depth 20 or more can run for a long time. The article suggests 17 or 18 for a proper check. The elapsed time is shown while it runs and stays with the result.</p>
+        <p class="hint">Do your own census first. Depth 14 is a quick first look. Each level deeper takes roughly twice as long in a browser, so depths 20+ can run for a long time, speed also depends on the specifications of your device. We suggests depths 16 to 18 for a reasonable engine assessment. Depths 20+ should be used in critical/unclear positions to get a more accurate evaluation. The elapsed time is shown while it runs and stays with the result.</p>
         <p class="need" id="runNeed" role="status"></p>
         <div class="bar" id="bar" hidden><i id="barI"></i></div>
         <p class="msg" id="engMsg"></p>
@@ -436,8 +471,8 @@ var STORE_PLAY = 'mc1:play';
 var GRADES = [
   { k: 'good',   label: 'Good',   sym: '✓', key: 'g' },
   { k: 'ok',     label: 'Ok',     sym: '~',      key: 'o' },
-  { k: 'unsure', label: 'Unsure', sym: '?',      key: 'u' },
-  { k: 'bad',    label: 'Bad',    sym: '✗', key: 'b' }
+  { k: 'bad',    label: 'Bad',    sym: '✗', key: 'b' },
+  { k: 'unsure', label: 'Unsure', sym: '?',      key: 'u' }
 ];
 var GSYM = { good: '✓', ok: '~', unsure: '?', bad: '✗' };
 var GLABEL = { good: 'good', ok: 'ok', unsure: 'unsure', bad: 'bad' };
@@ -484,15 +519,28 @@ Engine.prototype.start = function (cb) {
   if (me.worker && me.ready) { cb(); return; }
   if (me.worker) { me.waiting = cb; return; }
   me.waiting = cb;
-  try {
-    var src = 'importScripts(' + JSON.stringify(ENGINE_URL) + ');';
-    var url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
-    me.worker = new Worker(url);
-  } catch (e) { me.fail(e && e.message ? e.message : 'no worker'); return; }
-  me.worker.onmessage = function (ev) { me.line(typeof ev.data === 'string' ? ev.data : String(ev.data)); };
-  me.worker.onerror = function (ev) { me.fail(ev && ev.message ? ev.message : 'script blocked'); };
+  var src = 'importScripts(' + JSON.stringify(ENGINE_URL) + ');';
+  var urls = [];
+  try { urls.push(URL.createObjectURL(new Blob([src], { type: 'text/javascript' }))); } catch (e0) {}
+  urls.push('data:text/javascript;charset=utf-8,' + encodeURIComponent(src));   // fallback where blob workers are refused
+  var firstErr = '';
+  function spawn(i) {
+    if (i >= urls.length) { me.fail(firstErr || 'no worker'); return; }
+    var w;
+    try { w = new Worker(urls[i]); }
+    catch (e) { if (!firstErr) firstErr = e && e.message ? e.message : 'no worker'; spawn(i + 1); return; }
+    me.worker = w;
+    w.onmessage = function (ev) { me.line(typeof ev.data === 'string' ? ev.data : String(ev.data)); };
+    w.onerror = function (ev) {
+      var m = ev && ev.message ? ev.message : 'script blocked';
+      if (!firstErr) firstErr = m;
+      if (me.worker === w && !me.ready && i + 1 < urls.length) { try { w.terminate(); } catch (e2) {} me.worker = null; spawn(i + 1); return; }
+      me.fail(m);
+    };
+    w.postMessage('uci');
+  }
   me.timer = setTimeout(function () { if (!me.ready) me.fail('no answer after 25 seconds'); }, 25000);
-  me.post('uci');
+  spawn(0);
 };
 Engine.prototype.line = function (l) {
   if (l === 'uciok') { this.post('isready'); return; }
@@ -1054,7 +1102,7 @@ function analysisFail(why) {
   A.searching = false; A.run = null; S.review = null;
   renderEngine();
   $('engMsg').className = 'msg err';
-  $('engMsg').textContent = 'The engine could not start in this view' + (why ? ' (' + why + ')' : '') + '. Your grades, candidates and status still work. Press Run to try again.';
+  $('engMsg').textContent = 'The engine could not start in this view' + (why ? ' (' + why + ')' : '') + '. Claude\'s page view can block engines. If it fails again, open the standalone framework_dev.html in Chrome or Edge, where the engine runs. Your grades, candidates and status still work here.';
   renderEngineControls(); renderProgress(); renderRecord();
 }
 AN.onFail = analysisFail;
