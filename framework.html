@@ -1,4 +1,4 @@
-<title>§CIRE Move Analysis Tool</title>
+<title>§CIRE MAT</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;600;700&family=Public+Sans:wght@400;500;600&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
@@ -291,7 +291,7 @@ tr.differs td { background: var(--bad-bg); }
   <header class="top">
     <div>
       <div class="brandwrap">
-        <h1 class="brand" tabindex="0" aria-describedby="brandTip">§CIRE Move Analysis Tool</h1>
+        <h1 class="brand" tabindex="0" aria-describedby="brandTip">§CIRE MAT</h1>
         <div class="tip" id="brandTip" role="tooltip"><b>S</b>cilicet <b>C</b>andidate <b>I</b>nvestigation <b>R</b>ating <b>E</b>valuation<span class="tipsub"><b>M</b>ove <b>A</b>nalysis <b>T</b>ool</span></div>
       </div>
       <p>Listed is every legal move, grade them, pick your candidates and judge your evaluation. Save your progress to a file and pick it up where you left off.</p>
@@ -420,7 +420,7 @@ tr.differs td { background: var(--bad-bg); }
             <p class="warn" id="candWarn" hidden></p>
           </div>
           <div>
-            <h3 id="stLabel">Judge position status</h3>
+            <h3 id="stLabel">Judge position</h3>
             <div class="status" id="status" role="group" aria-labelledby="stLabel"></div>
           </div>
         </div>
@@ -998,7 +998,7 @@ function renderCensus() {
   var ea = d.eng ? analyse(d.eng, d) : null;
   S.moves = moves;
   var side = sideName(S.ply);
-  $('cSub').textContent = moves.length ? moves.length + ' legal moves for ' + side + '. Tap each move with a brush selected.' : '';
+  $('cSub').textContent = moves.length ? moves.length + ' legal moves for ' + side + '. Tap each move with a grade brush selected.' : '';
   if (!moves.length) {
     var chk = new Chess(fen).in_check();
     $('census').innerHTML = '<p class="empty">' + (chk ? 'Checkmate.' : 'No legal moves here (stalemate).') + ' Pick another position from the game list.</p>';
@@ -1089,7 +1089,7 @@ function renderVerdict() {
   var bad = d.cands.filter(function (u) { return d.grades[u] === 'bad'; }).map(sanOf);
   var w = $('candWarn');
   if (bad.length) { w.hidden = false; w.textContent = 'You graded ' + bad.join(', ') + ' as bad but also picked it as a candidate.'; } else w.hidden = true;
-  $('stLabel').textContent = 'Judge position status, from ' + sideName(S.ply) + "'s side";
+  $('stLabel').textContent = 'Judge position (' + sideName(S.ply) + "'s side)";
   var sh = '';
   STATUS.forEach(function (s) {
     sh += '<button type="button" class="stbtn" data-status="' + s.k + '" aria-pressed="' + (d.status === s.k) + '">' + s.label + '<small>' + s.range + '</small></button>';
@@ -1247,7 +1247,7 @@ function renderEngine() {
   function tile(label, n, of, cls) {
     return '<div class="stat' + (cls || '') + '"><div class="sl">' + label + '</div><div class="sv">' + (of ? n + '<small> of ' + of + '</small>' : '\u2014') + '</div><div class="sp2">' + (of ? Math.round(n / of * 100) + '%' : 'not scored yet') + '</div></div>';
   }
-  var h = '<div class="stats">' + tile('Your candidates in the engine top 3', a.hits, a.picks.length, a.gold ? ' gold' : '') + tile('Your grades that agree with the engine', a.agree, a.total) + '</div>';
+  var h = '<div class="stats">' + tile('Your candidates in the engine top 3', a.hits, a.picks.length, a.gold ? ' gold' : '') + tile('Your census grades that agree with the engine', a.agree, a.total) + '</div>';
   if (!d.cands.length) h += '<p class="stathint">Pick candidates in step 2 to score them. The engine\u2019s top three are ' + a.top.map(function (u) { return '<b>' + esc(a.byUci[u].san) + '</b>'; }).join(', ') + '.</p>';
   else h += '<p class="stathint">' + (a.gold ? 'Gold star. All of your top ' + a.want + ' candidates are in the engine\u2019s top three.' : 'Aim for your candidates to sit near the top of the engine\u2019s list.') + ' Unsure grades are left out of the grade comparison.</p>';
   h += '<ul class="facts">';
