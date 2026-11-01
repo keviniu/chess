@@ -1,5 +1,5 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>§CIRE MAT</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d5a71'/%3E%3Ccircle cx='32' cy='19' r='9.5' fill='%23fff'/%3E%3Crect x='26.5' y='27' width='11' height='5' rx='2' fill='%23fff'/%3E%3Cpath d='M21 51c1-13 5-18 9-19h4c4 1 8 6 9 19z' fill='%23fff'/%3E%3Crect x='16' y='49' width='32' height='8' rx='4' fill='%23fff'/%3E%3Ccircle cx='51' cy='13' r='5.5' fill='%23e6b422'/%3E%3C/svg%3E">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;600;700&family=Public+Sans:wght@400;500;600&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
@@ -157,6 +157,7 @@ details { margin-top: 12px; }
 .about dl.acro dd { margin: 0; }
 .about dl.acro .gap { grid-column: 1 / -1; height: 6px; }
 .about .todo { color: var(--muted); font-style: italic; }
+.sessflag { font: 600 12px var(--font-body); text-transform: none; letter-spacing: 0; color: var(--unsure); }
 summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); }
 textarea { width: 100%; min-height: 84px; margin-top: 8px; font: 13px/1.4 var(--font-mono); background: var(--raised); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 8px; resize: vertical; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
@@ -345,8 +346,25 @@ tr.differs td { background: var(--bad-bg); }
         <p class="pstatus" id="playStatus" role="status"></p>
       </section>
 
-      <section class="card" id="sessCard" aria-labelledby="hsess">
-        <header><h2 id="hsess">Save and load</h2><span class="sub">Keep a long analysis safe and pick it up later.</span></header>
+      <section class="card" aria-label="Game">
+        <header><h2>Game</h2><span class="sub">Pick a move to open the position before it.</span></header>
+        <div class="moves" id="moveList"></div>
+        <details id="loader">
+          <summary>Load another game</summary>
+          <textarea id="pgnIn" spellcheck="false" placeholder="Paste a PGN with moves, or a FEN for a single position"></textarea>
+          <div class="row">
+            <button class="btn primary" id="loadBtn" type="button">Load</button>
+            <button class="btn" id="sampleBtn" type="button">Article sample</button>
+          </div>
+          <p class="msg" id="loadMsg"></p>
+        </details>
+      </section>
+
+      <section class="card about" id="sessCard" aria-label="Save and load">
+       <details id="sessBlock">
+        <summary>Save and load <span class="sessflag" id="sessFlag"></span></summary>
+        <div class="abody">
+        <p class="sub" style="margin:0 0 8px">Keep a long analysis safe and pick it up later.</p>
         <p class="sess" id="sessState" role="status"></p>
         <div class="fname">
           <label for="saveName">File name</label>
@@ -371,20 +389,8 @@ tr.differs td { background: var(--bad-bg); }
             <button class="btn" id="sessPaste" type="button">Load from this text</button>
           </div>
         </details>
-      </section>
-
-      <section class="card" aria-label="Game">
-        <header><h2>Game</h2><span class="sub">Pick a move to open the position before it.</span></header>
-        <div class="moves" id="moveList"></div>
-        <details id="loader">
-          <summary>Load another game</summary>
-          <textarea id="pgnIn" spellcheck="false" placeholder="Paste a PGN with moves, or a FEN for a single position"></textarea>
-          <div class="row">
-            <button class="btn primary" id="loadBtn" type="button">Load</button>
-            <button class="btn" id="sampleBtn" type="button">Article sample</button>
-          </div>
-          <p class="msg" id="loadMsg"></p>
-        </details>
+        </div>
+       </details>
       </section>
 
       <section class="card about" id="aboutCard" aria-label="About §CIRE MAT">
@@ -1610,6 +1616,7 @@ function renderSession() {
   }
   el.innerHTML = t + ' This browser also keeps a copy as you go, but a file is the safe one.';
   el.className = 'sess' + (n && S.dirty ? ' unsaved' : '');
+  var fl = $('sessFlag'); if (fl) fl.textContent = n && S.dirty ? '· not saved to a file' : '';
 }
 
 function sessionObject() {
@@ -1854,5 +1861,3 @@ if (typeof Chess === 'undefined') {
 }
 })();
 </script>
-
-</body></html>
