@@ -106,6 +106,9 @@ h1, h2, h3, p { margin: 0; }
 .sq-hov { fill: none; stroke: var(--accent); stroke-width: 8; }
 .tdot { fill: var(--accent); opacity: .7; }
 .tcap { fill: none; stroke: var(--accent); stroke-width: 9; opacity: .7; }
+.pcs { pointer-events: none; }
+.pcs.w { --f: var(--piece-w); --l: var(--piece-w-line); }
+.pcs.b { --f: var(--piece-b); --l: var(--piece-b-line); }
 .coord { font: 600 17px var(--font-mono); fill: var(--muted); opacity: .9; pointer-events: none; }
 .pc { font-size: 84px; text-anchor: middle; pointer-events: none; stroke-width: 3; paint-order: stroke fill; stroke-linejoin: round;
   font-family: 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Apple Symbols', 'DejaVu Sans', 'Arial Unicode MS', serif; }
@@ -503,6 +506,7 @@ var STATUS = [
 var PIECE_NAME = { p: 'Pawns', n: 'Knights', b: 'Bishops', r: 'Rooks', q: 'Queen', k: 'King' };
 var PIECE_LET = { p: 'P', n: 'N', b: 'B', r: 'R', q: 'Q', k: 'K' };
 var PORD = { p: 0, n: 1, b: 2, r: 3, q: 4, k: 5 };
+var BISHOP_DEF = '<symbol id="pc-b" viewBox="0 0 100 100"><path style="fill:var(--f);stroke:var(--l);stroke-width:3;stroke-linejoin:round" d="M36 52h28c0 12 5 20 9 27H27c4-7 9-15 9-27z"/><path style="fill:var(--f);stroke:var(--l);stroke-width:3;stroke-linejoin:round" d="M6 90c0-5 7-7 17-8 10-1 16-3 19-6h16c3 3 9 5 19 6 10 1 17 3 17 8 0 3-2 4-5 4H66c-7 0-10-6-16-6s-9 6-16 6H11c-3 0-5-1-5-4z"/><rect style="fill:var(--f);stroke:var(--l);stroke-width:3;stroke-linejoin:round" x="27" y="44" width="46" height="8" rx="4"/><path style="fill:var(--f);stroke:var(--l);stroke-width:3;stroke-linejoin:round" d="M50 14c18 9 24 20 18 31H32c-6-11 0-22 18-31z"/><circle style="fill:var(--f);stroke:var(--l);stroke-width:3;stroke-linejoin:round" cx="50" cy="12" r="5"/><path style="fill:none;stroke:var(--l);stroke-width:3.2;stroke-linecap:round" d="M50 21v17M41 29h18"/></symbol>';
 var GLYPH = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
 var GOOD_MAX = 30;   // centipawns lost against the engine's best move
 var OK_MAX = 80;
@@ -946,6 +950,27 @@ function fmClick(e) {
 
 /* ---------- board ---------- */
 
+var PM = null;
+// Pieces come from the device's font and differ in height, so measure each one and scale them all to the same height.
+function pieceMetrics() {
+  if (PM) return PM;
+  var codes = { p: '\u265F', n: '\u265E', b: '\u265D', r: '\u265C', q: '\u265B', k: '\u265A' }, m = {}, tall = 0, ok = true;
+  try {
+    var c = document.createElement('canvas').getContext('2d');
+    c.font = "84px 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Apple Symbols', 'DejaVu Sans', 'Arial Unicode MS', serif";
+    Object.keys(codes).forEach(function (t) {
+      var r = c.measureText(codes[t] + '\uFE0E');
+      if (r.actualBoundingBoxAscent === undefined) { ok = false; return; }
+      var a = r.actualBoundingBoxAscent, d = r.actualBoundingBoxDescent;
+      if (!(a + d > 20)) { ok = false; return; }
+      m[t] = { a: a, d: d }; tall = Math.max(tall, a + d);
+    });
+  } catch (e) { ok = false; }
+  if (!ok) { m = {}; tall = 62; Object.keys(codes).forEach(function (t) { m[t] = { a: 62, d: 0 }; }); }
+  PM = { m: m, T: Math.min(tall, 76) };
+  return PM;
+}
+
 function drawBoard() {
   var fen = FM.on ? FM.fen : S.fens[S.ply], g = new Chess(fen), bd = g.board(), fl = S.flip;
   var sel = FM.on ? FM.sel : S.sel, mvs = FM.on ? FM.moves : S.moves, turnName = g.turn() === 'w' ? 'White' : 'Black';
@@ -953,7 +978,7 @@ function drawBoard() {
   function Y(r) { return (fl ? 7 - r : r) * 100; }      // r: 0 is rank 8
   var last = FM.on ? FM.last : (S.ply > 0 ? S.ucis[S.ply - 1] : null);
   var live = FM.on || canMove();
-  var s = '<svg viewBox="0 0 800 800" role="img" aria-label="Chess position, ' + esc(turnName) + ' to move"><defs><marker id="ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path class="ahead" d="M0 0L10 5L0 10z"/></marker></defs>';
+  var s = '<svg viewBox="0 0 800 800" role="img" aria-label="Chess position, ' + esc(turnName) + ' to move"><defs>' + BISHOP_DEF + '<marker id="ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path class="ahead" d="M0 0L10 5L0 10z"/></marker></defs>';
   var r, f;
   for (r = 0; r < 8; r++) for (f = 0; f < 8; f++) {
     var dark = ((f + (8 - r)) % 2) === 1;
@@ -967,7 +992,16 @@ function drawBoard() {
   for (r = 0; r < 8; r++) s += '<text class="coord" x="6" y="' + (Y(r) + 22) + '">' + (8 - r) + '</text>';
   for (r = 0; r < 8; r++) for (f = 0; f < 8; f++) {
     var p = bd[r][f];
-    if (p) s += '<text class="pc ' + p.color + '" x="' + (X(f) + 50) + '" y="' + (Y(r) + 76) + '">' + GLYPH[p.type] + '︎</text>';
+    if (p) {
+      var pm = pieceMetrics(), T = pm.T, bottom = Y(r) + 50 + T / 2;
+      if (p.type === 'b') {
+        var kb = T / 90;
+        s += '<g transform="translate(' + (X(f) + 50 - 50 * kb) + ' ' + (bottom - T - 5.5 * kb) + ') scale(' + kb + ')"><use class="pcs ' + p.color + '" href="#pc-b" x="0" y="0" width="100" height="100"/></g>';
+      } else {
+        var g1 = pm.m[p.type], ks = T / (g1.a + g1.d);
+        s += '<text class="pc ' + p.color + '" style="stroke-width:' + (3 / ks).toFixed(2) + 'px" transform="translate(' + (X(f) + 50) + ' ' + (bottom - g1.d * ks) + ') scale(' + ks + ')" x="0" y="0">' + GLYPH[p.type] + '\ufe0e</text>';
+      }
+    }
   }
   if (live && sel) {
     var seen = {};
