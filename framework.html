@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>§CIRE MAT</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;600;700&family=Public+Sans:wght@400;500;600&display=swap">
@@ -95,7 +96,8 @@ h1, h2, h3, p { margin: 0; }
 
 /* board */
 .board-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-#posLabel { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+#posLabel { font-family: var(--font-mono); font-size: 13px; font-weight: 600; margin-top: 10px; }
+.board-head { justify-content: flex-end; }
 #boardWrap svg { display: block; width: 100%; height: auto; border-radius: 3px; }
 #boardWrap.playable svg { cursor: pointer; }
 .sq-l { fill: var(--sq-light); } .sq-d { fill: var(--sq-dark); }
@@ -306,7 +308,6 @@ tr.differs td { background: var(--bad-bg); }
     <aside class="left">
       <section class="card" aria-label="Board">
         <div class="board-head">
-          <div id="posLabel"></div>
           <div class="bh-btns">
             <button class="btn small" id="flipBtn" type="button">Flip board</button>
             <button class="btn small" id="freeBtn" type="button" aria-pressed="false" title="Move the pieces freely to try out ideas. Switch off to return to the game.">♞ Free move: <span id="freeState">off</span></button>
@@ -321,6 +322,7 @@ tr.differs td { background: var(--bad-bg); }
           <button class="btn" id="nextBtn" type="button" aria-label="Next position">›</button>
           <button class="btn" id="lastBtn" type="button" aria-label="End of game">»</button>
         </div>
+        <div id="posLabel"></div>
       </section>
 
       <section class="card" id="playCard" aria-labelledby="hplay" hidden>
@@ -1852,3 +1854,5 @@ if (typeof Chess === 'undefined') {
 }
 })();
 </script>
+
+</body></html>
