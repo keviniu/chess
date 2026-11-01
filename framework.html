@@ -506,7 +506,7 @@ var STATUS = [
 var PIECE_NAME = { p: 'Pawns', n: 'Knights', b: 'Bishops', r: 'Rooks', q: 'Queen', k: 'King' };
 var PIECE_LET = { p: 'P', n: 'N', b: 'B', r: 'R', q: 'Q', k: 'K' };
 var PORD = { p: 0, n: 1, b: 2, r: 3, q: 4, k: 5 };
-var BISHOP_DEF = '<symbol id="pc-b" viewBox="0 0 100 100"><path style="fill:var(--f);stroke:var(--l);stroke-width:3;stroke-linejoin:round" d="M36 52h28c0 12 5 20 9 27H27c4-7 9-15 9-27z"/><path style="fill:var(--f);stroke:var(--l);stroke-width:3;stroke-linejoin:round" d="M6 90c0-5 7-7 17-8 10-1 16-3 19-6h16c3 3 9 5 19 6 10 1 17 3 17 8 0 3-2 4-5 4H66c-7 0-10-6-16-6s-9 6-16 6H11c-3 0-5-1-5-4z"/><rect style="fill:var(--f);stroke:var(--l);stroke-width:3;stroke-linejoin:round" x="27" y="44" width="46" height="8" rx="4"/><path style="fill:var(--f);stroke:var(--l);stroke-width:3;stroke-linejoin:round" d="M50 14c18 9 24 20 18 31H32c-6-11 0-22 18-31z"/><circle style="fill:var(--f);stroke:var(--l);stroke-width:3;stroke-linejoin:round" cx="50" cy="12" r="5"/><path style="fill:none;stroke:var(--l);stroke-width:3.2;stroke-linecap:round" d="M50 21v17M41 29h18"/></symbol>';
+var BISHOP_DEF = '<symbol id="pc-b" viewBox="0 0 100 100"><path style="fill:var(--f);stroke:var(--l);stroke-width:var(--sw);stroke-linejoin:round" d="M36 52h28c0 12 5 20 9 27H27c4-7 9-15 9-27z"/><path style="fill:var(--f);stroke:var(--l);stroke-width:var(--sw);stroke-linejoin:round" d="M6 90c0-5 7-7 17-8 10-1 16-3 19-6h16c3 3 9 5 19 6 10 1 17 3 17 8 0 3-2 4-5 4H66c-7 0-10-6-16-6s-9 6-16 6H11c-3 0-5-1-5-4z"/><rect style="fill:var(--f);stroke:var(--l);stroke-width:var(--sw);stroke-linejoin:round" x="27" y="44" width="46" height="8" rx="4"/><path style="fill:var(--f);stroke:var(--l);stroke-width:var(--sw);stroke-linejoin:round" d="M50 14c18 9 24 20 18 31H32c-6-11 0-22 18-31z"/><circle style="fill:var(--f);stroke:var(--l);stroke-width:var(--sw);stroke-linejoin:round" cx="50" cy="12" r="5"/><path style="fill:none;stroke:var(--l);stroke-width:calc(var(--sw) * 1.15);stroke-linecap:round" d="M50 21v17M41 29h18"/></symbol>';
 var GLYPH = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
 var GOOD_MAX = 30;   // centipawns lost against the engine's best move
 var OK_MAX = 80;
@@ -995,11 +995,11 @@ function drawBoard() {
     if (p) {
       var pm = pieceMetrics(), T = pm.T, bottom = Y(r) + 50 + T / 2;
       if (p.type === 'b') {
-        var kb = T / 90;
-        s += '<g transform="translate(' + (X(f) + 50 - 50 * kb) + ' ' + (bottom - T - 5.5 * kb) + ') scale(' + kb + ')"><use class="pcs ' + p.color + '" href="#pc-b" x="0" y="0" width="100" height="100"/></g>';
+        var kb = T / 90, sw = (p.color === 'w' ? 1 : 1.5) / kb;   // outline in screen pixels, same as the font pieces
+        s += '<g transform="translate(' + (X(f) + 50 - 50 * kb) + ' ' + (bottom - T - 5.5 * kb) + ') scale(' + kb + ')"><use class="pcs ' + p.color + '" style="--sw:' + sw.toFixed(2) + '" href="#pc-b" x="0" y="0" width="100" height="100"/></g>';
       } else {
         var g1 = pm.m[p.type], ks = T / (g1.a + g1.d);
-        s += '<text class="pc ' + p.color + '" style="stroke-width:' + (3 / ks).toFixed(2) + 'px" transform="translate(' + (X(f) + 50) + ' ' + (bottom - g1.d * ks) + ') scale(' + ks + ')" x="0" y="0">' + GLYPH[p.type] + '\ufe0e</text>';
+        s += '<text class="pc ' + p.color + '" style="stroke-width:' + ((p.color === 'w' ? 2 : 3) / ks).toFixed(2) + 'px" transform="translate(' + (X(f) + 50) + ' ' + (bottom - g1.d * ks) + ') scale(' + ks + ')" x="0" y="0">' + GLYPH[p.type] + '\ufe0e</text>';
       }
     }
   }
