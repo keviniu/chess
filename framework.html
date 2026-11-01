@@ -17,7 +17,7 @@
   --sq-light: #dce6e9;
   --sq-dark: #9bb2bc;
   --last: #e3c04a;
-  --piece-w: #eceff0;
+  --piece-w: #d3d9db;
   --piece-w-line: #16282f;
   --piece-b: #17282f;
   --piece-b-line: #dce6e9;
@@ -34,7 +34,7 @@
     --paper: #0c171b; --surface: #122127; --raised: #172a31; --ink: #e2ecef; --muted: #8ea4ad; --line: #284049;
     --accent: #66c4de; --accent-ink: #062630;
     --sq-light: #38535e; --sq-dark: #213b46; --last: #8d7a24;
-    --piece-w: #d6dfe2; --piece-w-line: #0a1215; --piece-b: #0b1417; --piece-b-line: #a9c0c9;
+    --piece-w: #b4bfc4; --piece-w-line: #0a1215; --piece-b: #0b1417; --piece-b-line: #a9c0c9;
     --good: #4cc37a; --good-bg: #17402a; --ok: #4cc9d8; --ok-bg: #153d43;
     --unsure: #e6c04a; --unsure-bg: #433a10; --bad: #f07a7a; --bad-bg: #4b1d1d;
     color-scheme: dark;
@@ -44,7 +44,7 @@
   --paper: #0c171b; --surface: #122127; --raised: #172a31; --ink: #e2ecef; --muted: #8ea4ad; --line: #284049;
   --accent: #66c4de; --accent-ink: #062630;
   --sq-light: #38535e; --sq-dark: #213b46; --last: #8d7a24;
-  --piece-w: #d6dfe2; --piece-w-line: #0a1215; --piece-b: #0b1417; --piece-b-line: #a9c0c9;
+  --piece-w: #b4bfc4; --piece-w-line: #0a1215; --piece-b: #0b1417; --piece-b-line: #a9c0c9;
   --good: #4cc37a; --good-bg: #17402a; --ok: #4cc9d8; --ok-bg: #153d43;
   --unsure: #e6c04a; --unsure-bg: #433a10; --bad: #f07a7a; --bad-bg: #4b1d1d;
   color-scheme: dark;
@@ -415,9 +415,9 @@ tr.differs td { background: var(--bad-bg); }
               <dt>T</dt><dd>Tool</dd>
             </dl>
             <p>§CIRE is based on the Latin word <i>scire</i>, which means "to know", and is pronounced the same way, i.e. SKEE-reh.</p>
-            <p>This program is entirely free. If you think it is good and would like to make a small donation for our efforts, please buy us a coffee here: <span class="todo">[link to be added]</span></p>
+            <p>This program is entirely free. If you think it is good and would like to make a small donation for our efforts, please <a href="https://pay.sumup.com/b2c/Q7FNZAZJ" target="_blank" rel="noopener">buy us a coffee here</a>.</p>
             <p>Feedback and comments are welcome. Contact us at: <span class="todo">[contact to be added]</span></p>
-            <p class="lastmod">Last modified: 1 Nov 2026, 09:26</p>
+            <p class="lastmod">Last modified: 1 Nov 2026, 16:20</p>
           </div>
         </details>
       </section>
@@ -997,11 +997,11 @@ function drawBoard() {
     if (p) {
       var pm = pieceMetrics(), T = pm.T, bottom = Y(r) + 50 + T / 2;
       if (p.type === 'b') {
-        var kb = T / 90, sw = (p.color === 'w' ? 1 : 1.5) / kb;   // outline in screen pixels, same as the font pieces
+        var kb = T / 90, sw = 1.25 / kb;   // outline in screen pixels, same as the font pieces
         s += '<g transform="translate(' + (X(f) + 50 - 50 * kb) + ' ' + (bottom - T - 5.5 * kb) + ') scale(' + kb + ')"><use class="pcs ' + p.color + '" style="--sw:' + sw.toFixed(2) + '" href="#pc-b" x="0" y="0" width="100" height="100"/></g>';
       } else {
         var g1 = pm.m[p.type], ks = T / (g1.a + g1.d);
-        s += '<text class="pc ' + p.color + '" style="stroke-width:' + ((p.color === 'w' ? 2 : 3) / ks).toFixed(2) + 'px" transform="translate(' + (X(f) + 50) + ' ' + (bottom - g1.d * ks) + ') scale(' + ks + ')" x="0" y="0">' + GLYPH[p.type] + '\ufe0e</text>';
+        s += '<text class="pc ' + p.color + '" style="stroke-width:' + (2.5 / ks).toFixed(2) + 'px" transform="translate(' + (X(f) + 50) + ' ' + (bottom - g1.d * ks) + ') scale(' + ks + ')" x="0" y="0">' + GLYPH[p.type] + '\ufe0e</text>';
       }
     }
   }
