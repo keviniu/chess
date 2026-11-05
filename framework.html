@@ -69,7 +69,9 @@ h1, h2, h3, p { margin: 0; }
   font-size: clamp(28px, 5vw, 40px); line-height: 1; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance;
 }
 .top p { color: var(--muted); max-width: 56ch; margin-top: 8px; }
-.brandrow { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; min-width: 0; }
+.brandrow { display: flex; flex-direction: row-reverse; justify-content: space-between; align-items: center; gap: 16px; flex: 1 1 100%; min-width: 0; }
+.brandrow > div { flex: 1 1 auto; min-width: 0; }
+@media (max-width: 560px) { .logo { width: 84px; } }
 .logo { display: block; width: 120px; height: auto; flex: none; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .logo { filter: invert(1); } }
 :root[data-theme="dark"] .logo { filter: invert(1); }
@@ -424,7 +426,7 @@ tr.differs td { background: var(--bad-bg); }
             <p>§CIRE is based on the Latin word <i>scire</i>, which means "to know", and is pronounced the same way, i.e. SKEE-reh.</p>
             <p>This program is entirely free. If you think it is good and would like to make a small donation for our efforts, please <a href="https://pay.sumup.com/b2c/Q7FNZAZJ" target="_blank" rel="noopener">buy us a coffee here</a>.</p>
             <p>Feedback and comments are welcome. Contact us at: <span class="todo">[contact to be added]</span></p>
-            <p class="lastmod">Last modified: 4 Nov 2026, 06:32</p>
+            <p class="lastmod">Last modified: 5 Nov 2026, 09:05</p>
           </div>
         </details>
       </section>
