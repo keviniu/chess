@@ -461,7 +461,7 @@ tr.differs td { background: var(--bad-bg); }
             <p>§CIRE is based on the Latin word <i>scire</i>, which means "to know", and is pronounced the same way, i.e. SKEE-reh.</p>
             <p>This program is entirely free. If you think it is good and would like to make a small donation for our efforts, please <a href="https://pay.sumup.com/b2c/Q7FNZAZJ" target="_blank" rel="noopener">buy us a coffee here</a>.</p>
             <p>Feedback and comments are welcome. Contact us at: <span class="todo">[contact to be added]</span></p>
-            <p class="lastmod">Last modified: 14 Nov 2026, 16:05</p>
+            <p class="lastmod">Last modified: 14 Nov 2026, 20:45</p>
           </div>
         </details>
       </section>
@@ -1300,7 +1300,7 @@ function analysisFail(why) {
   A.searching = false; A.run = null; S.review = null;
   renderEngine();
   $('engMsg').className = 'msg err';
-  $('engMsg').textContent = 'The engine could not start in this view' + (why ? ' (' + why + ')' : '') + '. Claude\'s page view can block engines. If it fails again, open the standalone framework_dev.html in Chrome or Edge, where the engine runs. Your grades, candidates and status still work here.';
+  $('engMsg').textContent = 'The engine could not start in this view' + (why ? ' (' + why + ')' : '') + '. Claude\'s page view can block engines. If it fails again, open the standalone framework.html in Chrome or Edge, where the engine runs. Your grades, candidates and status still work here.';
   renderEngineControls(); renderProgress(); renderRecord();
 }
 AN.onFail = analysisFail;
@@ -1308,10 +1308,16 @@ AN.onFail = analysisFail;
 AN.onLine = function (line) {
   var run = A.run;
   if (line.indexOf('info') === 0 && run && !run.discard) {
-    if (/ (lowerbound|upperbound)/.test(line)) return;
+    var isBound = / (lowerbound|upperbound)/.test(line);
     var dm = / depth (\d+)/.exec(line), mp = / multipv (\d+)/.exec(line), sc = / score (cp|mate) (-?\d+)/.exec(line), pv = / pv (.+)$/.exec(line);
     if (!dm || !mp || !sc || !pv) return;
     var depth = +dm[1], k = +mp[1], moves = pv[1].trim().split(/\s+/);
+    if (isBound) {   // not an exact score. Keep it only as a fallback for a move that never gets an exact one (the worst moves often do not)
+      run.bounds = run.bounds || {};
+      var pb = run.bounds[moves[0]];
+      if (!pb || depth >= pb.depth) run.bounds[moves[0]] = { depth: depth, type: sc[1], v: +sc[2], uci: moves[0], pv: moves, k: k };
+      return;
+    }
     // keyed by the move itself, not the multipv slot: slots change move between depths, so a slot that
     // missed an update could hold a stale move and hide another one
     var key = moves[0], prev = run.lines[key];
@@ -1341,6 +1347,7 @@ function pvToSan(fen, pv) {
 
 function finishRun() {
   var run = A.run;
+  if (run.bounds) Object.keys(run.bounds).forEach(function (u) { if (!run.lines[u] && Object.keys(run.lines).length) run.lines[u] = run.bounds[u]; });
   var lines = Object.keys(run.lines).map(function (key) {
     var l = run.lines[key];
     var val = l.type === 'mate' ? (l.v > 0 ? 1 : -1) * (100000 - Math.abs(l.v) * 100) : l.v;
@@ -1643,7 +1650,7 @@ function grFail(why) {
   if (GR.run && GR.run.tick) clearInterval(GR.run.tick);
   GR.run = null;
   renderReview(); renderEngineControls();
-  var m = $('grNote'); if (m) { m.className = 'rv-note err'; m.textContent = 'The engine could not start in this view' + (why ? ' (' + why + ')' : '') + '. Open the standalone framework_dev.html in Chrome or Edge, where the engine runs.'; }
+  var m = $('grNote'); if (m) { m.className = 'rv-note err'; m.textContent = 'The engine could not start in this view' + (why ? ' (' + why + ')' : '') + '. Open the standalone framework.html in Chrome or Edge, where the engine runs.'; }
 }
 function grStart() {
   if (A.run || A.searching || GR.run || !S.sans.length) return;
