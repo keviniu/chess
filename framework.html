@@ -166,6 +166,19 @@ details { margin-top: 12px; }
 .rv-row b { white-space: nowrap; }
 .rv-row b { color: var(--ink); font-family: var(--font-mono); }
 .review .rv-note { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+.review .rv-note.err { color: var(--bad, #b3261e); }
+.rv-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.rv-eval { height: 14px; border-radius: 7px; overflow: hidden; background: var(--piece-b); border: 1px solid var(--piece-b-line); margin: 0 0 6px; }
+.rv-ew { display: block; height: 100%; background: var(--piece-w); }
+.rv-evl { display: flex; justify-content: space-between; font: 600 12px var(--font-mono); margin-bottom: 12px; }
+.rv-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+.rv-dl { font-size: 12px; color: var(--muted); }
+.rv-dl select { font: inherit; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.linkbtn { font: inherit; padding: 0 2px; border: 0; background: none; color: var(--accent); text-decoration: underline; cursor: pointer; }
+.chip.flash { outline: 3px solid var(--accent); outline-offset: 2px; }
+.fm-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
+.fm-hint { font-size: 12px; color: var(--muted); }
+.rv-prog .rv-fill { background: var(--accent); box-shadow: none; }
 .bh-btns { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 .btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--paper); }
 #boardWrap.free svg { outline: 3px solid var(--accent); outline-offset: -3px; }
@@ -346,6 +359,11 @@ tr.differs td { background: var(--bad-bg); }
         <div id="boardWrap"></div>
         <div id="promoRow" hidden></div>
         <p class="pstatus" id="freeNote" hidden>Free move is on. Move any piece for either side to try out ideas. Nothing here is graded or saved. Use ‹ to take back a move and « to go back to where you started. Switch Free move off to return to the game position.</p>
+        <div class="fm-actions" id="fmActions" hidden>
+          <button type="button" class="btn small primary" id="fmCensusBtn">Run census on this position</button>
+          <button type="button" class="btn small" id="fmBackBtn" hidden>Back to the original game</button>
+          <span class="fm-hint" id="fmHint"></span>
+        </div>
         <div class="navrow">
           <button class="btn" id="firstBtn" type="button" aria-label="Start of game">«</button>
           <button class="btn" id="prevBtn" type="button" aria-label="Previous position">‹</button>
@@ -443,7 +461,7 @@ tr.differs td { background: var(--bad-bg); }
             <p>§CIRE is based on the Latin word <i>scire</i>, which means "to know", and is pronounced the same way, i.e. SKEE-reh.</p>
             <p>This program is entirely free. If you think it is good and would like to make a small donation for our efforts, please <a href="https://pay.sumup.com/b2c/Q7FNZAZJ" target="_blank" rel="noopener">buy us a coffee here</a>.</p>
             <p>Feedback and comments are welcome. Contact us at: <span class="todo">[contact to be added]</span></p>
-            <p class="lastmod">Last modified: 5 Nov 2026, 21:50</p>
+            <p class="lastmod">Last modified: 14 Nov 2026, 16:05</p>
           </div>
         </details>
       </section>
@@ -551,6 +569,7 @@ var DL = null;      // the downloads capability, when this view offers it
 var FH = null;      // the file chosen for saving (File System Access), when the browser allows it
 var STORE_LAST = 'mc1:last';
 var A = { run: null, searching: false };       // analysis search state
+var GR = { run: null, depth: 12 };              // engine-only game review (every position, one line each)
 var PSET = { color: 'w' };                      // colour chosen in the Play card
 
 /* ---------- engine worker wrapper (one for analysis, one for the opponent) ---------- */
@@ -741,6 +760,20 @@ function readLast() {
   } catch (e) { return null; }
 }
 function restore() { S.data = {}; try { var t = localStorage.getItem(S.key); if (t) S.data = JSON.parse(t) || {}; } catch (e) { S.data = {}; } }
+function readGrv() {
+  try { var t = localStorage.getItem(S.key + ':grv'); return t ? cleanGrv(JSON.parse(t), S.sans.length) : null; } catch (e) { return null; }
+}
+function saveGrv() {
+  S.dirty = true; renderSession();
+  try { if (S.grv) localStorage.setItem(S.key + ':grv', JSON.stringify(S.grv)); } catch (e) {}
+}
+function cleanGrv(raw, N) {
+  if (!raw || !Array.isArray(raw.evals) || raw.evals.length !== N + 1) return null;
+  for (var i = 0; i < raw.evals.length; i++) if (!isFinite(+raw.evals[i])) return null;
+  var best = [];
+  for (var j = 0; j <= N; j++) { var u = raw.best && raw.best[j]; best.push(typeof u === 'string' && /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(u) ? u : null); }
+  return { depth: +raw.depth || 0, secs: Math.max(0, +raw.secs || 0), evals: raw.evals.map(Number), best: best };
+}
 function loadSaved() {
   try { var t = localStorage.getItem(STORE_PLAY); var r = t ? JSON.parse(t) : null; return r && r.ucis && r.play ? r : null; } catch (e) { return null; }
 }
@@ -769,17 +802,19 @@ function setGame(start, moves, ply, opts) {
     sans.push(r.san); ucis.push(r.from + r.to + (r.promotion || '')); fens.push(g.fen());
   }
   stopEngine(true);
+  grAbort();
   PL.kill();
   S.startFen = start; S.fens = fens; S.sans = sans; S.ucis = ucis;
   S.ply = ply === undefined ? 0 : Math.max(0, Math.min(ply, fens.length - 1));
   S.play = opts.play || null;
   S.sel = null; S.promo = null; S.hover = null; S.playMsg = '';
-  if (opts.key) { S.key = opts.key; S.data = opts.data || {}; }
-  else { S.key = 'mc1:' + hash(start + '|' + ucis.join(' ')); restore(); }
+  if (opts.key) { S.key = opts.key; S.data = opts.data || {}; S.grv = opts.grv || null; }
+  else { S.key = 'mc1:' + hash(start + '|' + ucis.join(' ')); restore(); S.grv = readGrv(); }
   S.dirty = !opts.key && workedCount() > 0; S.savedAt = null;
-  FH = null; lookupHandle();
+  FH = null; $('saveName').value = readName(); lookupHandle();
   writeLast();
   if (!S.play && S.brush === 'play') S.brush = 'unsure';
+  S.back = null;
   fmOff(); fmUI();
   renderAll();
 }
@@ -928,12 +963,35 @@ function onBoardClick(e) {
 /* ---------- free move (sandbox, never touches the game or your grades) ---------- */
 
 var FM = { on: false, fen: '', stack: [], last: null, sel: null, promo: null, moves: [] };
-function fmSet(fen) { FM.fen = fen; FM.moves = new Chess(fen).moves({ verbose: true }); }
+function fmSet(fen) { FM.fen = fen; FM.moves = new Chess(fen).moves({ verbose: true }); if (typeof fmUI === 'function' && $('fmActions')) fmUI(); }
 function fmUI() {
   $('freeBtn').setAttribute('aria-pressed', String(FM.on));
   $('freeState').textContent = FM.on ? 'on' : 'off';
   $('freeNote').hidden = !FM.on;
+  $('fmActions').hidden = !(FM.on || S.back);
+  $('fmCensusBtn').hidden = !FM.on;
+  $('fmCensusBtn').disabled = !FM.on || FM.moves.length === 0;
+  $('fmBackBtn').hidden = !S.back;
+  $('fmHint').textContent = FM.on ? (FM.stack.length ? 'Starts a new census from the board as it is now, with your free moves as the game.' : 'Make a few moves first, or run it on the position as it stands.') : '';
 }
+function fmCensus() {
+  if (!FM.on || !FM.moves.length) return;
+  var base = FM.stack.length ? FM.stack[0].fen : FM.fen, ucis = [];
+  for (var i = 1; i < FM.stack.length; i++) ucis.push(FM.stack[i].last);
+  if (FM.stack.length) ucis.push(FM.last);
+  var keep = S.back || { start: S.startFen, ucis: S.ucis.slice(), ply: S.ply };
+  var moves = ucis.map(function (u) { return { from: u.slice(0, 2), to: u.slice(2, 4), promotion: u.length > 4 ? u.charAt(4) : undefined }; });
+  setGame(base, moves, moves.length);
+  S.back = keep; fmUI();
+}
+function fmBack() {
+  var b = S.back; if (!b) return;
+  var moves = b.ucis.map(function (u) { return { from: u.slice(0, 2), to: u.slice(2, 4), promotion: u.length > 4 ? u.charAt(4) : undefined }; });
+  S.back = null;
+  setGame(b.start, moves, b.ply);
+}
+$('fmCensusBtn').addEventListener('click', fmCensus);
+$('fmBackBtn').addEventListener('click', fmBack);
 function fmOff() { FM.on = false; FM.stack = []; FM.sel = null; FM.promo = null; FM.last = null; FM.moves = []; }
 function fmToggle() {
   if (FM.on) fmOff();
@@ -1267,6 +1325,10 @@ AN.onLine = function (line) {
   }
 };
 
+var anLineOld = AN.onLine, anFailOld = AN.onFail;
+AN.onLine = function (line) { if (GR.run) { grLine(line); return; } anLineOld(line); };
+AN.onFail = function (why) { if (GR.run) { grFail(why); return; } anFailOld(why); };
+
 function pvToSan(fen, pv) {
   var g = new Chess(fen), out = [];
   for (var i = 0; i < Math.min(8, pv.length); i++) {
@@ -1295,7 +1357,7 @@ function finishRun() {
 }
 
 function startRun(ply, depth, onDone) {
-  if (A.searching || A.run) return;
+  if (A.searching || A.run || GR.run) return;
   var fen = S.fens[ply], n = census(fen).length;
   if (!n) { if (onDone) onDone(); return; }
   var run = { ply: ply, fen: fen, n: n, want: depth, depth: 0, lines: {}, discard: false, onDone: onDone };
@@ -1336,7 +1398,7 @@ function reviewTargets() {
 }
 
 function startReview() {
-  if (A.run) return;
+  if (A.run || GR.run) return;
   var q = reviewTargets(); if (!q.length) return;
   S.review = { queue: q, total: q.length, done: 0, depth: +$('depth').value, t0: Date.now() };
   reviewNext();
@@ -1364,14 +1426,14 @@ function renderProgress() {
 }
 
 function renderEngineControls() {
-  var busy = !!A.run;
-  var dd = pd(), ungraded = S.moves.filter(function (m) { return !dd.grades[m.uci]; }).length, noCand = !dd.cands.length;
-  var ready = S.moves.length > 0 && !ungraded && !noCand;
+  var busy = !!A.run || !!GR.run;
+  var dd = pd(), cm = census(S.fens[S.ply]), miss = cm.filter(function (m) { return !dd.grades[m.uci]; }), ungraded = miss.length, noCand = !dd.cands.length;
+  var ready = cm.length > 0 && !ungraded && !noCand;
   $('runBtn').disabled = busy || !ready;
   var need = [];
-  if (S.moves.length && ungraded) need.push('grade the ' + ungraded + ' move' + (ungraded === 1 ? '' : 's') + ' not graded yet');
-  if (S.moves.length && noCand) need.push('pick at least one candidate');
-  $('runNeed').textContent = need.length && !busy ? 'To run the engine, ' + need.join(' and ') + '.' : '';
+  if (cm.length && ungraded) need.push('grade the ' + ungraded + ' move' + (ungraded === 1 ? '' : 's') + ' not graded yet (' + miss.slice(0, 6).map(function (m) { return '<button type="button" class="linkbtn" data-find="' + m.uci + '">' + esc(m.san) + '</button>'; }).join(', ') + (miss.length > 6 ? ' and ' + (miss.length - 6) + ' more' : '') + ')');
+  if (cm.length && noCand) need.push('pick at least one candidate');
+  $('runNeed').innerHTML = need.length && !busy ? 'To run the engine, ' + need.join(' and ') + '.' : '';
   $('stopBtn').hidden = !busy;
   if (!busy) $('bar').hidden = true;
   renderRecordButtons();
@@ -1537,34 +1599,149 @@ function renderTally() {
     stat(hits, picks, 'candidates in top 3') + stat(agree, total, 'grades agree with engine');
 }
 
-// Game review: on the final step, show a score for each side, like an accuracy score in a game review.
+// Game review: the engine looks at every position of the game (one line each, no grades needed)
+// and scores each side's moves, like the accuracy score in a game review.
+function winPct(v) { var c = Math.max(-1000, Math.min(1000, v)); return 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * c)) - 1); }
+function fmtVal(v) {
+  if (Math.abs(v) >= 90000) return (v > 0 ? '+' : '−') + 'M' + Math.max(1, Math.round((100000 - Math.abs(v)) / 100));
+  var p = v / 100; return (p > 0 ? '+' : p < 0 ? '−' : '') + Math.abs(p).toFixed(2);
+}
+function grScore() {
+  var g = S.grv, N = S.sans.length;
+  if (!g || g.evals.length !== N + 1) return null;
+  var T = { w: { acc: 0, n: 0, best: 0, inacc: 0, mist: 0, blun: 0 }, b: { acc: 0, n: 0, best: 0, inacc: 0, mist: 0, blun: 0 } };
+  for (var j = 0; j < N; j++) {
+    var mover = turnAt(j) === 'w' ? 'w' : 'b', t = T[mover], sg = mover === 'w' ? 1 : -1;
+    var loss = Math.max(0, winPct(sg * g.evals[j]) - winPct(sg * g.evals[j + 1]));
+    var acc = Math.max(0, Math.min(100, 103.1668 * Math.exp(-0.04354 * loss) - 3.1669));
+    t.acc += acc; t.n++;
+    if (g.best[j] && g.best[j] === S.ucis[j]) t.best++;
+    if (loss >= 15) t.blun++; else if (loss >= 10) t.mist++; else if (loss >= 5) t.inacc++;
+  }
+  ['w', 'b'].forEach(function (k) { T[k].mean = T[k].n ? T[k].acc / T[k].n : null; });
+  return T;
+}
+
+function grProgress() {
+  var run = GR.run, m = $('grMsg'), bar = $('grBarI');
+  if (!run) return;
+  var total = run.fens.length, pos = Math.min(total, Math.max(1, run.i + 1));
+  if (bar) bar.style.width = Math.min(100, Math.round(((run.i + (run.curDepth || 0) / run.depth) / total) * 100)) + '%';
+  if (m) m.textContent = run.i < 0 ? 'Starting Stockfish...' : 'Checking position ' + pos + ' of ' + total + '. Depth ' + (run.curDepth || 0) + ' of ' + run.depth + '. Elapsed ' + fmtTime((Date.now() - run.t0) / 1000) + '.';
+}
+function grEnd() {
+  if (GR.run && GR.run.tick) clearInterval(GR.run.tick);
+  GR.run = null;
+  renderReview(); renderEngineControls(); renderRecord();
+}
+function grAbort() {
+  if (!GR.run) return;
+  if (GR.run.tick) clearInterval(GR.run.tick);
+  GR.run = null; AN.kill();
+}
+function grFail(why) {
+  if (GR.run && GR.run.tick) clearInterval(GR.run.tick);
+  GR.run = null;
+  renderReview(); renderEngineControls();
+  var m = $('grNote'); if (m) { m.className = 'rv-note err'; m.textContent = 'The engine could not start in this view' + (why ? ' (' + why + ')' : '') + '. Open the standalone framework_dev.html in Chrome or Edge, where the engine runs.'; }
+}
+function grStart() {
+  if (A.run || A.searching || GR.run || !S.sans.length) return;
+  var run = { fens: S.fens.slice(), i: -1, depth: GR.depth, evals: [], best: [], cur: null, curDepth: 0, t0: Date.now(), tick: null, key: S.key };
+  GR.run = run;
+  renderReview(); renderEngineControls(); renderEngine();
+  AN.start(function () {
+    if (GR.run !== run) return;
+    run.t0 = Date.now();
+    run.tick = setInterval(grProgress, 1000);
+    AN.post('ucinewgame'); AN.post('setoption name MultiPV value 1');
+    grNext();
+  });
+}
+function grNext() {
+  var run = GR.run; if (!run) return;
+  run.i++;
+  if (run.i >= run.fens.length) { grDone(); return; }
+  var fen = run.fens[run.i], g = new Chess(fen);
+  if (g.game_over()) {
+    run.evals[run.i] = g.in_checkmate() ? (g.turn() === 'w' ? -100000 : 100000) : 0;
+    run.best[run.i] = null;
+    grNext(); return;
+  }
+  run.cur = null; run.curDepth = 0;
+  grProgress();
+  AN.post('position fen ' + fen); AN.post('go depth ' + run.depth);
+}
+function grLine(line) {
+  var run = GR.run; if (!run) return;
+  if (line.indexOf('info') === 0) {
+    if (/ (lowerbound|upperbound)/.test(line)) return;
+    var dm = / depth (\d+)/.exec(line), sc = / score (cp|mate) (-?\d+)/.exec(line), pv = / pv (.+)$/.exec(line);
+    if (!dm || !sc || !pv) return;
+    var d = +dm[1];
+    if (d >= run.curDepth) { run.curDepth = d; run.cur = { type: sc[1], v: +sc[2], uci: pv[1].trim().split(/\s+/)[0] }; }
+    return;
+  }
+  if (line.indexOf('bestmove') === 0) {
+    var c = run.cur, white = (run.fens[run.i].split(' ')[1] || 'w') === 'w';
+    var val = c ? (c.type === 'mate' ? (c.v > 0 ? 1 : -1) * (100000 - Math.abs(c.v) * 100) : c.v) : 0;
+    run.evals[run.i] = white ? val : -val;
+    var bm = c ? c.uci : (line.split(/\s+/)[1] || null);
+    run.best[run.i] = bm && UCI_RE.test(bm) ? bm : null;
+    grNext();
+  }
+}
+function grDone() {
+  var run = GR.run;
+  S.grv = { depth: run.depth, secs: (Date.now() - run.t0) / 1000, evals: run.evals.slice(), best: run.best.slice() };
+  saveGrv();
+  grEnd();
+}
+
 function renderReview() {
   var box = $('reviewBox'), N = S.sans.length;
   if (!box) return;
   if (FM.on || N === 0 || S.ply !== N) { box.hidden = true; return; }
-  var T = { w: { checked: 0, gold: 0, hits: 0, picks: 0, agree: 0, total: 0 }, b: { checked: 0, gold: 0, hits: 0, picks: 0, agree: 0, total: 0 } };
-  Object.keys(S.data).forEach(function (k) {
-    var ply = +k, d = S.data[ply]; if (!d || !d.eng || ply >= S.fens.length) return;
-    var a = analyse(d.eng, d); if (!a) return;
-    var t = T[turnAt(ply) === 'w' ? 'w' : 'b'];
-    t.checked++; if (a.gold) t.gold++; t.hits += a.hits; t.picks += a.picks.length; t.agree += a.agree; t.total += a.total;
-  });
-  function pc(n, of) { return of ? Math.round(n / of * 100) : null; }
-  function side(key, name) {
-    var t = T[key], sc = pc(t.agree, t.total), tp = pc(t.hits, t.picks);
-    return '<div class="rv-side ' + key + '"><div class="rv-name"><span class="rv-chip"></span>' + name + '</div>' +
-      '<div class="rv-pct">' + (sc === null ? '—' : sc + '%') + '</div>' +
-      '<div class="rv-bar"><div class="rv-fill" style="width:' + (sc || 0) + '%"></div></div>' +
-      '<div class="rv-row"><span>Grades agree</span><b>' + (t.total ? t.agree + '/' + t.total : '—') + '</b></div>' +
-      '<div class="rv-row"><span>Candidates in top 3</span><b>' + (t.picks ? t.hits + '/' + t.picks : '—') + '</b></div>' +
-      '<div class="rv-row"><span>Gold stars</span><b>' + t.gold + '</b></div>' +
-      '<div class="rv-row"><span>Positions checked</span><b>' + t.checked + '</b></div></div>';
+  var run = GR.run, sc = grScore(), h = '<h3>Game review</h3>';
+  if (run) {
+    h += '<div class="rv-bar rv-prog"><div class="rv-fill" id="grBarI" style="width:0%"></div></div><p class="rv-note" id="grMsg" role="status"></p>' +
+      '<div class="rv-actions"><button type="button" class="btn small" data-gract="stop">Stop</button></div>';
+  } else {
+    if (sc) {
+      var fin = S.grv.evals[N], wp = winPct(fin);
+      function band(v) { return statusLabel(bandOf({ type: 'cp', v: v })); }
+      function side(key, name, sign) {
+        var t = sc[key], m = t.mean;
+        return '<div class="rv-side ' + key + '"><div class="rv-name"><span class="rv-chip"></span>' + name + '</div>' +
+          '<div class="rv-sub">' + band(sign * fin) + ' (' + fmtVal(sign * fin) + ')</div>' +
+          '<div class="rv-pct">' + (m === null ? '—' : m.toFixed(1) + '%') + '</div>' +
+          '<div class="rv-bar"><div class="rv-fill" style="width:' + (m || 0) + '%"></div></div>' +
+          '<div class="rv-row"><span>Accuracy</span><b>' + t.n + ' move' + (t.n === 1 ? '' : 's') + '</b></div>' +
+          '<div class="rv-row"><span>Engine’s best move</span><b>' + t.best + '</b></div>' +
+          '<div class="rv-row"><span>Inaccuracies</span><b>' + t.inacc + '</b></div>' +
+          '<div class="rv-row"><span>Mistakes</span><b>' + t.mist + '</b></div>' +
+          '<div class="rv-row"><span>Blunders</span><b>' + t.blun + '</b></div></div>';
+      }
+      h += '<div class="rv-eval" role="img" aria-label="Engine evaluation of the final position, White ' + fmtVal(fin) + '"><span class="rv-ew" style="width:' + wp.toFixed(1) + '%"></span></div>' +
+        '<div class="rv-evl"><span>White ' + fmtVal(fin) + '</span><span>Black ' + fmtVal(-fin) + '</span></div>' +
+        '<div class="rv-grid">' + side('w', 'White', 1) + side('b', 'Black', -1) + '</div>' +
+        '<p class="rv-note">Final position as judged by the engine. Accuracy is how close each side’s moves were to the engine’s best, from a search of every position at depth ' + S.grv.depth + (S.grv.secs ? ' (' + fmtTime(S.grv.secs) + ')' : '') + '.</p>';
+    } else {
+      h += '<p class="rv-note">Let the engine look at every position of this game and score each side’s moves. It does not need any of your grades.</p>';
+    }
+    var busy = !!A.run || !!A.searching;
+    h += '<div class="rv-actions"><label class="rv-dl">Depth <select id="grDepth">' + [10, 12, 14, 16].map(function (d) { return '<option value="' + d + '"' + (d === GR.depth ? ' selected' : '') + '>' + d + '</option>'; }).join('') + '</select></label>' +
+      '<button type="button" class="btn small primary" data-gract="run"' + (busy ? ' disabled' : '') + '>' + (sc ? 'Run again' : 'Run game review') + ' (' + (N + 1) + ' positions)</button></div>' +
+      '<p class="rv-note" id="grNote">' + (sc ? '' : 'Depth 12 is a quick look and takes a minute or two for a game this long. Each extra depth takes about twice as long.') + '</p>';
   }
-  var any = T.w.checked + T.b.checked;
-  box.innerHTML = '<h3>Game review</h3><div class="rv-grid">' + side('w', 'White') + side('b', 'Black') + '</div>' +
-    '<p class="rv-note">' + (any ? 'The score is how often each side\'s census grades agree with the engine, across the positions you checked.' : 'Run the engine on some positions to see each side\'s score.') + '</p>';
-  box.hidden = false;
+  box.innerHTML = h; box.hidden = false;
+  if (run) grProgress();
 }
+$('reviewBox').addEventListener('click', function (e) {
+  var b = e.target.closest('[data-gract]'); if (!b) return;
+  if (b.dataset.gract === 'run') grStart(); else if (b.dataset.gract === 'stop') { grAbort(); renderReview(); renderEngineControls(); renderRecord(); }
+});
+$('reviewBox').addEventListener('change', function (e) { if (e.target.id === 'grDepth') GR.depth = +e.target.value; });
 
 /* ---------- render all, events ---------- */
 
@@ -1616,6 +1793,11 @@ $('resignBtn').addEventListener('click', resign);
 $('palette').addEventListener('click', function (e) {
   var b = e.target.closest('[data-brush]'); if (!b) return;
   S.brush = b.dataset.brush; renderPalette(); renderCensus();
+});
+$('runNeed').addEventListener('click', function (e) {
+  var b = e.target.closest('[data-find]'); if (!b) return;
+  var el = document.querySelector('#census .chip[data-uci="' + b.dataset.find + '"]');
+  if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.add('flash'); setTimeout(function () { el.classList.remove('flash'); }, 1800); }
 });
 $('census').addEventListener('click', function (e) { var b = e.target.closest('[data-uci]'); if (b) applyBrush(b.dataset.uci); });
 ['mouseover', 'focusin'].forEach(function (t) {
@@ -1713,7 +1895,9 @@ function renderSession() {
 function sessionObject() {
   var data = {};
   Object.keys(S.data).forEach(function (k) { if (worked(+k)) data[k] = S.data[k]; });
-  return { app: 'move-census', version: 1, savedAt: new Date().toISOString(), game: { start: S.startFen, ucis: S.ucis.slice() }, ply: S.ply, data: data };
+  var o = { app: 'move-census', version: 1, savedAt: new Date().toISOString(), game: { start: S.startFen, ucis: S.ucis.slice() }, ply: S.ply, data: data };
+  if (S.grv) o.grv = S.grv;
+  return o;
 }
 
 function stampName() {
@@ -1721,10 +1905,11 @@ function stampName() {
   return 'cire-mat-' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + '-' + ('0' + d.getHours()).slice(-2) + ('0' + d.getMinutes()).slice(-2) + '.json';
 }
 
+function readName() { try { return localStorage.getItem(S.key + ':fname') || ''; } catch (e) { return ''; } }
 function saveName() {
   var raw = ($('saveName').value || '').replace(/[\\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim().replace(/\.json$/i, '');
   if (!raw) return stampName();
-  try { localStorage.setItem('mc1:name', raw); } catch (e) {}
+  try { localStorage.setItem(S.key + ':fname', raw); } catch (e) {}
   return raw + '.json';
 }
 
@@ -1756,7 +1941,7 @@ function lookupHandle() {
   try {
     idbOpen().then(function (db) {
       var q = db.transaction('h').objectStore('h').get(key);
-      q.onsuccess = function () { if (q.result && S.key === key && !FH) { FH = q.result; renderFileLine(); } };
+      q.onsuccess = function () { if (q.result && S.key === key && !FH) { FH = q.result; if (q.result.name) $('saveName').value = q.result.name.replace(/\.json$/i, ''); renderFileLine(); } };
     }).catch(function () {});
   } catch (e) {}
 }
@@ -1841,7 +2026,7 @@ function cleanData(raw) {
     if (!/^\d+$/.test(k) || !d || typeof d !== 'object') return;
     var g = {};
     if (d.grades && typeof d.grades === 'object') Object.keys(d.grades).forEach(function (u) { if (UCI_RE.test(u) && GK[d.grades[u]]) g[u] = d.grades[u]; });
-    var c = Array.isArray(d.cands) ? d.cands.filter(function (u) { return typeof u === 'string' && UCI_RE.test(u); }) : [];
+    var c = Array.isArray(d.cands) ? d.cands.filter(function (u) { return typeof u === 'string' && /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(u); }) : [];
     var eng = null;
     if (d.eng && Array.isArray(d.eng.lines)) {
       var lines = d.eng.lines.filter(function (l) { return l && typeof l.uci === 'string' && UCI_RE.test(l.uci) && isFinite(+l.v) && isFinite(+l.val); })
@@ -1866,15 +2051,15 @@ function parseSave(text) {
     if (!g.move(m)) throw new Error('Move ' + (i + 1) + ' in the saved game is not legal, so the file may be damaged.');
     moves.push(m);
   }
-  return { start: o.game.start, moves: moves, ucis: o.game.ucis, ply: Math.max(0, Math.min(+o.ply || 0, moves.length)), data: cleanData(o.data), savedAt: o.savedAt };
+  return { start: o.game.start, moves: moves, ucis: o.game.ucis, ply: Math.max(0, Math.min(+o.ply || 0, moves.length)), data: cleanData(o.data), grv: cleanGrv(o.grv, moves.length), savedAt: o.savedAt };
 }
 
 function loadSave(text) {
   try {
     var s = parseSave(text);
     var key = 'mc1:' + hash(s.start + '|' + s.ucis.join(' '));
-    setGame(s.start, s.moves, s.ply, { key: key, data: s.data });
-    save();
+    setGame(s.start, s.moves, s.ply, { key: key, data: s.data, grv: s.grv });
+    save(); if (S.grv) saveGrv();
     S.dirty = false; S.savedAt = null;
     var n = workedCount();
     renderSession();
@@ -1902,7 +2087,7 @@ $('loadFile').addEventListener('change', function () {
   var f = $('loadFile').files && $('loadFile').files[0];
   if (!f) return;
   var r = new FileReader();
-  r.onload = function () { loadSave(String(r.result)); $('loadFile').value = ''; };
+  r.onload = function () { if (loadSave(String(r.result))) { $('saveName').value = f.name.replace(/\.json$/i, ''); try { localStorage.setItem(S.key + ':fname', $('saveName').value); } catch (e) {} } $('loadFile').value = ''; };
   r.onerror = function () { sessMsg('That file could not be read.', true); };
   r.readAsText(f);
 });
@@ -1923,7 +2108,6 @@ $('jumpBtn').addEventListener('click', function () {
 });
 $('recOnly').addEventListener('change', function () { S.recOnly = $('recOnly').checked; renderRecord(); });
 
-try { var savedName = localStorage.getItem('mc1:name'); if (savedName) $('saveName').value = savedName; } catch (e) {}
 $('saveName').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doSave(); } });
 
 (function () {
