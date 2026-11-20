@@ -461,7 +461,7 @@ tr.differs td { background: var(--bad-bg); }
             <p>§CIRE is based on the Latin word <i>scire</i>, which means "to know", and is pronounced the same way, i.e. SKEE-reh.</p>
             <p>This program is entirely free. If you think it is good and would like to make a small donation for our efforts, please <a href="https://pay.sumup.com/b2c/Q7FNZAZJ" target="_blank" rel="noopener">buy us a coffee here</a>.</p>
             <p>Feedback and comments are welcome. Contact us at: <span class="todo">[contact to be added]</span></p>
-            <p class="lastmod">Last modified: 14 Nov 2026, 20:45</p>
+            <p class="lastmod">Last modified: 20 Nov 2026, 15:40</p>
           </div>
         </details>
       </section>
@@ -1310,8 +1310,8 @@ AN.onLine = function (line) {
   if (line.indexOf('info') === 0 && run && !run.discard) {
     var isBound = / (lowerbound|upperbound)/.test(line);
     var dm = / depth (\d+)/.exec(line), mp = / multipv (\d+)/.exec(line), sc = / score (cp|mate) (-?\d+)/.exec(line), pv = / pv (.+)$/.exec(line);
-    if (!dm || !mp || !sc || !pv) return;
-    var depth = +dm[1], k = +mp[1], moves = pv[1].trim().split(/\s+/);
+    if (!dm || !sc || !pv) return;
+    var depth = +dm[1], k = mp ? +mp[1] : 1, moves = pv[1].trim().split(/\s+/);
     if (isBound) {   // not an exact score. Keep it only as a fallback for a move that never gets an exact one (the worst moves often do not)
       run.bounds = run.bounds || {};
       var pb = run.bounds[moves[0]];
@@ -1326,6 +1326,17 @@ AN.onLine = function (line) {
     return;
   }
   if (line.indexOf('bestmove') === 0) {
+    if (run && !run.discard) {
+      // With every move requested, Stockfish can leave out the very worst ones. Score each of those on its own.
+      if (!run.extra) { run.extra = census(run.fen).map(function (m) { return m.uci; }).filter(function (u) { return !run.lines[u]; }); run.extraN = run.extra.length; }
+      if (run.extra.length) {
+        var u1 = run.extra.shift();
+        renderProgress();
+        AN.post('setoption name MultiPV value 1'); AN.post('position fen ' + run.fen);
+        AN.post('go depth ' + Math.min(run.want, 16) + ' searchmoves ' + u1);
+        return;
+      }
+    }
     A.searching = false;
     if (run && !run.discard) finishRun(); else { A.run = null; renderEngine(); renderEngineControls(); renderProgress(); renderRecord(); }
   }
@@ -1428,7 +1439,7 @@ function renderProgress() {
   bar.hidden = false;
   $('barI').style.width = Math.min(100, Math.round(run.depth / run.want * 100)) + '%';
   $('engMsg').className = 'msg';
-  var what = S.review ? 'Reviewing move ' + (S.review.done + 1) + ' of ' + S.review.total + ' (' + plyLabel(run.ply) + ' ' + (S.sans[run.ply] || '') + ')' : 'Searching all ' + run.n + ' moves';
+  var what = run.extra && run.extraN ? 'Scoring the ' + run.extraN + ' move' + (run.extraN === 1 ? '' : 's') + ' the engine left out' : S.review ? 'Reviewing move ' + (S.review.done + 1) + ' of ' + S.review.total + ' (' + plyLabel(run.ply) + ' ' + (S.sans[run.ply] || '') + ')' : 'Searching all ' + run.n + ' moves';
   $('engMsg').textContent = A.searching ? what + '. Depth ' + run.depth + ' of ' + run.want + '. Elapsed ' + fmtTime((Date.now() - (run.t0 || Date.now())) / 1000) + (S.review ? '. Review total ' + fmtTime((Date.now() - S.review.t0) / 1000) : '') + '.' : 'Starting Stockfish...';
 }
 
