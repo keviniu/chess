@@ -281,6 +281,27 @@ h3 { font: 600 12px var(--font-mono); text-transform: uppercase; letter-spacing:
 .facts li { padding-left: 14px; position: relative; }
 .facts li::before { content: ''; position: absolute; left: 0; top: .6em; width: 6px; height: 2px; background: var(--muted); }
 .facts b { font-family: var(--font-mono); font-weight: 700; }
+.eng-split { display: grid; grid-template-columns: minmax(0, 250px) minmax(0, 1fr); gap: 14px; align-items: start; margin-top: 14px; }
+.eng-split .tablewrap { margin-top: 0; max-height: none; }
+.eng-more { margin-top: 10px; }
+.lv { position: sticky; top: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--raised); padding: 8px; }
+.lvhead { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.lvhead b { color: var(--ink); font-family: var(--font-mono); }
+.lvboard svg { display: block; width: 100%; height: auto; border-radius: 3px; }
+.lvnav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+.lvtoks { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 2px 4px; max-height: 96px; overflow: auto; }
+.lvtok { font: 12px var(--font-mono); border: 0; background: none; color: var(--ink); padding: 2px 3px; border-radius: 4px; cursor: pointer; }
+.lvtok i { font-style: normal; color: var(--muted); margin-right: 2px; }
+.lvtok.on { background: var(--accent); color: var(--accent-ink, #fff); }
+.lvtok.on i { color: inherit; }
+.lvboard.playable svg { cursor: pointer; }
+.lvhint { margin: 6px 0 0; font-size: 11px; color: var(--muted); }
+.lvreset { font: inherit; font-size: 11px; border: 0; background: none; color: var(--accent); text-decoration: underline; cursor: pointer; padding: 0; }
+.lvc { width: 1%; padding-right: 0; }
+.lvbtn { font-size: 11px; line-height: 1; width: 26px; height: 26px; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--accent); cursor: pointer; }
+.lvbtn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink, #fff); border-color: var(--accent); }
+tr.lv-on td { box-shadow: inset 0 -2px 0 var(--accent); }
+@media (max-width: 700px) { .eng-split { grid-template-columns: minmax(0, 1fr); } .lv { top: 0; z-index: 3; display: grid; grid-template-columns: minmax(0, 46%) minmax(0, 1fr); gap: 8px; align-items: start; } .lvhead { grid-column: 1 / -1; margin-bottom: 0; } .lvnav, .lvtoks { grid-column: 2; margin-top: 0; } .lvboard { grid-row: 2 / span 2; } .lvtoks { max-height: 120px; } }
 .tablewrap { overflow: auto; max-height: 440px; margin-top: 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--raised); }
 table { border-collapse: collapse; width: 100%; font-size: 13px; }
 th { position: sticky; top: 0; background: var(--surface); text-align: left; font: 600 11px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
@@ -461,7 +482,7 @@ tr.differs td { background: var(--bad-bg); }
             <p>§CIRE is based on the Latin word <i>scire</i>, which means "to know", and is pronounced the same way, i.e. SKEE-reh.</p>
             <p>This program is entirely free. If you think it is good and would like to make a small donation for our efforts, please <a href="https://pay.sumup.com/b2c/Q7FNZAZJ" target="_blank" rel="noopener">buy us a coffee here</a>.</p>
             <p>Feedback and comments are welcome. Contact us at: <span class="todo">[contact to be added]</span></p>
-            <p class="lastmod">Last modified: 20 Nov 2026, 15:40</p>
+            <p class="lastmod">Last modified: 21 Nov 2026, 18:05</p>
           </div>
         </details>
       </section>
@@ -1489,17 +1510,140 @@ function renderEngine() {
     h += '<li>Set a position status in step 2 to compare it with the engine’s ' + statusLabel(a.band).toLowerCase() + ' (' + fmtEval(best) + ').</li>';
   }
   h += '<li>Searched to depth ' + d.eng.depth + (d.eng.secs ? ' in ' + fmtTime(d.eng.secs) : '') + '. Scores are from ' + sideName(S.ply) + '’s side. Rankings can shuffle at other depths.</li></ul>';
-  h += '<div class="tablewrap"><table><thead><tr><th>#</th><th>Move</th><th style="text-align:right">Eval</th><th style="text-align:right">Loss</th><th style="text-align:center">You</th><th>Engine</th><th>Line</th></tr></thead><tbody>';
-  a.L.forEach(function (l) {
+  lvChoose(a);
+  h += '<div class="eng-split"><div class="lv" id="lv" aria-label="Engine line board"></div><div class="eng-right"><div class="tablewrap"><table><thead><tr><th></th><th>#</th><th>Move</th><th style="text-align:right">Eval</th><th style="text-align:right">Loss</th><th style="text-align:center">You</th><th>Engine</th></tr></thead><tbody>';
+  var shown = ENG_ALL ? a.L : a.L.filter(function (l, i) { return i < ENG_SHOW || d.cands.indexOf(l.uci) >= 0; });
+  shown.forEach(function (l) {
     var gr = d.grades[l.uci], ci = d.cands.indexOf(l.uci), differs = false;
     if (gr && gr !== 'unsure') differs = gr === 'good' ? l.cls !== 'good' : gr === 'ok' ? l.cls === 'bad' : l.cls !== 'bad';
-    h += '<tr data-uci="' + l.uci + '"' + ((ci >= 0 || differs) ? ' class="' + (ci >= 0 ? 'is-cand' : '') + (differs ? ' differs' : '') + '"' : '') + '><td class="num">' + l.rank + '</td><td class="m">' + esc(l.san) +
+    h += '<tr data-uci="' + l.uci + '"' + ((ci >= 0 || differs || l.uci === LV.uci) ? ' class="' + (ci >= 0 ? 'is-cand' : '') + (differs ? ' differs' : '') + (l.uci === LV.uci ? ' lv-on' : '') + '"' : '') + '><td class="lvc"><button type="button" class="lvbtn" data-lv="' + l.uci + '" aria-label="Show the ' + esc(l.san) + ' line on the board" aria-pressed="' + (l.uci === LV.uci) + '" title="Show this line on the board">\u25B6</button></td><td class="num">' + l.rank + '</td><td class="m">' + esc(l.san) +
       (ci >= 0 ? '<span class="tag">C' + (ci + 1) + '</span>' : '') + (l.uci === played ? '<span class="tag played">played</span>' : '') +
-      '</td><td class="num">' + fmtEval(l) + '</td><td class="num">' + fmtLoss(l.loss) + '</td><td class="you">' + (gr ? '<span class="gs g-' + gr + '">' + GSYM[gr] + '</span>' : '') + '</td><td style="white-space:nowrap"><span class="gs eicon g-' + l.cls + '">' + GSYM[l.cls] + '</span><span class="pill ' + l.cls + '">' + l.cls + '</span>' + (differs ? '<span class="diff" title="Your grade differs from the engine">≠</span>' : '') + '</td><td class="pv">' + esc(l.pv) + '</td></tr>';
+      '</td><td class="num">' + fmtEval(l) + '</td><td class="num">' + fmtLoss(l.loss) + '</td><td class="you">' + (gr ? '<span class="gs g-' + gr + '">' + GSYM[gr] + '</span>' : '') + '</td><td style="white-space:nowrap"><span class="gs eicon g-' + l.cls + '">' + GSYM[l.cls] + '</span><span class="pill ' + l.cls + '">' + l.cls + '</span>' + (differs ? '<span class="diff" title="Your grade differs from the engine">≠</span>' : '') + '</td></tr>';
   });
-  h += '</tbody></table></div>';
+  h += '</tbody></table></div>' + (a.L.length > shown.length || ENG_ALL ? '<button type="button" class="btn small eng-more" data-engall="1" aria-expanded="' + ENG_ALL + '">' + (ENG_ALL ? 'Show only the top ' + ENG_SHOW + (d.cands.length ? ' and your candidates' : '') : 'Show all ' + a.L.length + ' moves') + '</button>' : '') + '</div></div>';
+  box.innerHTML = h;
+  lvRender();
+}
+
+/* ---------- engine line board: step through any engine line next to the table ---------- */
+
+var ENG_SHOW = 10, ENG_ALL = false;
+var LV = { fen: null, uci: null, k: 1, steps: null, sel: null, custom: false };
+
+function lvSteps(fen, l) {
+  var g = new Chess(fen), steps = [{ fen: fen, san: '', last: null }];
+  String(l.pv || l.san).trim().split(/\s+/).forEach(function (san) {
+    if (!san) return;
+    var m = g.move(san);
+    if (!m) return;
+    steps.push({ fen: g.fen(), san: m.san, last: m.from + m.to, color: m.color });
+  });
+  return steps;
+}
+// keep the chosen line while the position and its engine result stay the same, otherwise start with the engine's first choice
+function lvChoose(a) {
+  var fen = S.fens[S.ply], ok = LV.fen === fen && LV.uci && a.byUci[LV.uci];
+  if (!ok) { ENG_ALL = false; LV.fen = fen; LV.uci = a.L[0].uci; LV.k = 1; LV.sel = null; LV.custom = false; }
+  if (!(ok && LV.custom && LV.steps)) LV.steps = lvSteps(fen, a.byUci[LV.uci]);
+  if (LV.k > LV.steps.length - 1) LV.k = LV.steps.length - 1;
+}
+function lvBoardSvg(step, sel, mvs) {
+  var g = new Chess(step.fen), bd = g.board(), fl = S.flip, pm = pieceMetrics(), T = pm.T;
+  function X(f) { return (fl ? 7 - f : f) * 100; }
+  function Y(r) { return (fl ? 7 - r : r) * 100; }
+  var s = '<svg viewBox="0 0 800 800" role="img" aria-label="Engine line position"><defs>' + BISHOP_DEF.replace('id="pc-b"', 'id="pc-bl"') + '</defs>', r, f;
+  for (r = 0; r < 8; r++) for (f = 0; f < 8; f++) s += '<rect class="' + (((f + (8 - r)) % 2) === 1 ? 'sq-d' : 'sq-l') + '" x="' + X(f) + '" y="' + Y(r) + '" width="100" height="100"/>';
+  if (step.last) [step.last.slice(0, 2), step.last.slice(2, 4)].forEach(function (sq) { s += '<rect class="sq-last" x="' + X(fileOf(sq)) + '" y="' + Y(7 - rankOf(sq)) + '" width="100" height="100"/>'; });
+  if (sel) s += '<rect class="sq-sel" x="' + X(fileOf(sel)) + '" y="' + Y(7 - rankOf(sel)) + '" width="100" height="100"/>';
+  for (r = 0; r < 8; r++) for (f = 0; f < 8; f++) {
+    var p = bd[r][f]; if (!p) continue;
+    var bottom = Y(r) + 50 + T / 2;
+    if (p.type === 'b') {
+      var kb = T / 90, sw = 1.25 / kb;
+      s += '<g transform="translate(' + (X(f) + 50 - 50 * kb) + ' ' + (bottom - T - 5.5 * kb) + ') scale(' + kb + ')"><use class="pcs ' + p.color + '" style="--sw:' + (sw * 1.8).toFixed(2) + '" href="#pc-bl" x="0" y="0" width="100" height="100"/></g>';
+    } else {
+      var g1 = pm.m[p.type], ks = T / (g1.a + g1.d);
+      s += '<text class="pc ' + p.color + '" style="stroke-width:' + (3.5 / ks).toFixed(2) + 'px" transform="translate(' + (X(f) + 50) + ' ' + (bottom - g1.d * ks) + ') scale(' + ks + ')" x="0" y="0">' + GLYPH[p.type] + '\ufe0e</text>';
+    }
+  }
+  if (sel) {
+    var seen = {};
+    (mvs || []).forEach(function (m) {
+      if (m.from !== sel || seen[m.to]) return;
+      seen[m.to] = 1;
+      var cx = X(fileOf(m.to)) + 50, cy = Y(7 - rankOf(m.to)) + 50, cap = m.flags.indexOf('c') >= 0 || m.flags.indexOf('e') >= 0;
+      s += cap ? '<circle class="tcap" cx="' + cx + '" cy="' + cy + '" r="42"/>' : '<circle class="tdot" cx="' + cx + '" cy="' + cy + '" r="15"/>';
+    });
+  }
+  return s + '</svg>';
+}
+function lvRender() {
+  var box = $('lv'); if (!box || !LV.steps) return;
+  var st = LV.steps, k = LV.k, n = st.length - 1, base = new Chess(st[0].fen), h = '';
+  var first = base.turn() === 'w', num = +(st[0].fen.split(' ')[5] || 1);
+  var toks = [];
+  for (var i = 1; i <= n; i++) {
+    var white = (first ? i % 2 === 1 : i % 2 === 0), no = num + Math.floor((first ? i - 1 : i) / 2);
+    var lead = white ? no + '.' : (i === 1 ? no + '...' : '');
+    toks.push('<button type="button" class="lvtok' + (i === k ? ' on' : '') + '" data-lvk="' + i + '">' + (lead ? '<i>' + lead + '</i>' : '') + esc(st[i].san) + '</button>');
+  }
+  var mvs = LV.sel ? new Chess(st[k].fen).moves({ verbose: true }) : null;
+  h += '<div class="lvhead">Line: <b>' + esc(st[1] ? st[1].san : '') + '</b> <span>' + (k === 0 ? 'start' : 'after move ' + k + ' of ' + n) + (LV.custom ? ', with your own moves' : '') + '</span>' + (LV.custom ? ' <button type="button" class="lvreset" data-lvreset="1">Back to the engine line</button>' : '') + '</div>';
+  h += '<div class="lvboard playable">' + lvBoardSvg(st[k], LV.sel, mvs) + '</div>';
+  h += '<div class="lvnav"><button type="button" class="btn small" data-lvnav="first" aria-label="Start of line"' + (k === 0 ? ' disabled' : '') + '>\u00AB</button><button type="button" class="btn small" data-lvnav="prev" aria-label="Previous move"' + (k === 0 ? ' disabled' : '') + '>\u2039</button><button type="button" class="btn small" data-lvnav="next" aria-label="Next move"' + (k >= n ? ' disabled' : '') + '>\u203A</button><button type="button" class="btn small" data-lvnav="last" aria-label="End of line"' + (k >= n ? ' disabled' : '') + '>\u00BB</button></div>';
+  h += '<div class="lvtoks">' + toks.join(' ') + '</div><p class="lvhint">Tap a piece to try your own moves from here.</p>';
   box.innerHTML = h;
 }
+function lvSelect(uci) {
+  var d = S.data[S.ply]; if (!d || !d.eng) return;
+  var a = analyse(d.eng, d), l = a.byUci[uci]; if (!l) return;
+  LV.fen = S.fens[S.ply]; LV.uci = uci; LV.k = 1; LV.sel = null; LV.custom = false; LV.steps = lvSteps(LV.fen, l);
+  if (LV.k > LV.steps.length - 1) LV.k = LV.steps.length - 1;
+  Array.prototype.forEach.call(document.querySelectorAll('#engOut tbody tr'), function (tr) {
+    var on = tr.dataset.uci === uci; tr.classList.toggle('lv-on', on);
+    var b = tr.querySelector('.lvbtn'); if (b) b.setAttribute('aria-pressed', String(on));
+  });
+  lvRender();
+}
+function lvBoardClick(e, wrap) {
+  var svg = wrap.querySelector('svg'); if (!svg) return;
+  var r = svg.getBoundingClientRect();
+  var col = Math.floor((e.clientX - r.left) / r.width * 8), row = Math.floor((e.clientY - r.top) / r.height * 8);
+  if (col < 0 || col > 7 || row < 0 || row > 7) return;
+  var fl = S.flip, sq = 'abcdefgh'.charAt(fl ? 7 - col : col) + (fl ? row + 1 : 8 - row);
+  var st = LV.steps[LV.k], mvs = new Chess(st.fen).moves({ verbose: true });
+  if (LV.sel) {
+    var hits = mvs.filter(function (m) { return m.from === LV.sel && m.to === sq; });
+    if (hits.length) {
+      var h0 = hits.filter(function (m) { return m.promotion === 'q'; })[0] || hits[0];
+      LV.sel = null; lvPlay(h0); return;
+    }
+  }
+  LV.sel = mvs.some(function (m) { return m.from === sq; }) && LV.sel !== sq ? sq : null;
+  lvRender();
+}
+function lvPlay(m) {
+  var st = LV.steps[LV.k], g = new Chess(st.fen), mv = g.move({ from: m.from, to: m.to, promotion: m.promotion });
+  if (!mv) { lvRender(); return; }
+  var nx = LV.steps[LV.k + 1];
+  if (nx && nx.last === mv.from + mv.to) { LV.k++; lvRender(); return; }   // same as the engine's next move
+  LV.steps = LV.steps.slice(0, LV.k + 1).concat([{ fen: g.fen(), san: mv.san, last: mv.from + mv.to, color: mv.color }]);
+  LV.k++; LV.custom = true; lvRender();
+}
+$('engOut').addEventListener('click', function (e) {
+  var bdw = e.target.closest('.lvboard');
+  if (bdw && LV.steps) { lvBoardClick(e, bdw); return; }
+  if (e.target.closest('[data-lvreset]')) { lvSelect(LV.uci); return; }
+  var more = e.target.closest('[data-engall]');
+  if (more) { ENG_ALL = !ENG_ALL; renderEngine(); return; }
+  var b = e.target.closest('[data-lv],[data-lvk],[data-lvnav]'); if (!b || !LV.steps) return;
+  var n = LV.steps.length - 1;
+  if (b.dataset.lv) { lvSelect(b.dataset.lv); return; }
+  LV.sel = null;
+  if (b.dataset.lvk) LV.k = +b.dataset.lvk;
+  else { var a = b.dataset.lvnav; LV.k = a === 'first' ? 0 : a === 'prev' ? Math.max(0, LV.k - 1) : a === 'next' ? Math.min(n, LV.k + 1) : n; }
+  lvRender();
+});
 
 /* ---------- game record ---------- */
 
