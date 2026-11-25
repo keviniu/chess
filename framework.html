@@ -482,7 +482,7 @@ tr.differs td { background: var(--bad-bg); }
             <p>§CIRE is based on the Latin word <i>scire</i>, which means "to know", and is pronounced the same way, i.e. SKEE-reh.</p>
             <p>This program is entirely free. If you think it is good and would like to make a small donation for our efforts, please <a href="https://pay.sumup.com/b2c/Q7FNZAZJ" target="_blank" rel="noopener">buy us a coffee here</a>.</p>
             <p>Feedback and comments are welcome. Contact us at: <span class="todo">[contact to be added]</span></p>
-            <p class="lastmod">Last modified: 25 Nov 2026, 00:30</p>
+            <p class="lastmod">Last modified: 25 Nov 2026, 10:30</p>
           </div>
         </details>
       </section>
@@ -2292,6 +2292,16 @@ $('sessCopy').addEventListener('click', function () {
 $('sessPaste').addEventListener('click', function () {
   var t = $('sessText').value.trim();
   if (!t) { sessMsg('Paste your saved progress text into the box first.', true); return; }
+  if (t.charAt(0) !== '{') {   // not saved progress: this looks like a game (PGN or FEN), so load it as a new game
+    var g;
+    try { g = parseGame(t); } catch (err) { sessMsg('That text is neither saved progress nor a game I could read. ' + err.message, true); return; }
+    setGame(g.start, g.moves, g.moves.length);
+    S.dirty = false;
+    $('saveName').value = '';
+    renderSession();
+    sessMsg(g.moves.length ? 'That was a game, not saved progress, so I loaded it as a new game: ' + g.moves.length + ' moves, at the final position.' : 'That was a position, not saved progress, so I loaded it as a new game.');
+    return;
+  }
   loadSave(t);
 });
 $('jumpBtn').addEventListener('click', function () {
