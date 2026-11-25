@@ -281,7 +281,7 @@ h3 { font: 600 12px var(--font-mono); text-transform: uppercase; letter-spacing:
 .facts li { padding-left: 14px; position: relative; }
 .facts li::before { content: ''; position: absolute; left: 0; top: .6em; width: 6px; height: 2px; background: var(--muted); }
 .facts b { font-family: var(--font-mono); font-weight: 700; }
-.eng-split { display: grid; grid-template-columns: minmax(0, 250px) minmax(0, 1fr); gap: 14px; align-items: start; margin-top: 14px; }
+.eng-split { display: grid; grid-template-columns: minmax(0, clamp(260px, 45%, 400px)) minmax(0, 1fr); gap: 14px; align-items: start; margin-top: 14px; }
 .eng-split .tablewrap { margin-top: 0; max-height: none; }
 .eng-more { margin-top: 10px; }
 .lv { position: sticky; top: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--raised); padding: 8px; }
@@ -301,7 +301,7 @@ h3 { font: 600 12px var(--font-mono); text-transform: uppercase; letter-spacing:
 .lvbtn { font-size: 11px; line-height: 1; width: 26px; height: 26px; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--accent); cursor: pointer; }
 .lvbtn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink, #fff); border-color: var(--accent); }
 tr.lv-on td { box-shadow: inset 0 -2px 0 var(--accent); }
-@media (max-width: 700px) { .eng-split { grid-template-columns: minmax(0, 1fr); } .lv { top: 0; z-index: 3; display: grid; grid-template-columns: minmax(0, 46%) minmax(0, 1fr); gap: 8px; align-items: start; } .lvhead { grid-column: 1 / -1; margin-bottom: 0; } .lvnav, .lvtoks { grid-column: 2; margin-top: 0; } .lvboard { grid-row: 2 / span 2; } .lvtoks { max-height: 120px; } }
+@media (max-width: 700px) { .eng-split { grid-template-columns: minmax(0, 1fr); } .lv { top: 0; z-index: 3; display: grid; grid-template-columns: minmax(0, 58%) minmax(0, 1fr); gap: 8px; align-items: start; } .lvhead { grid-column: 1 / -1; margin-bottom: 0; } .lvnav, .lvtoks { grid-column: 2; margin-top: 0; } .lvboard { grid-row: 2 / span 2; } .lvtoks { max-height: 120px; } }
 .tablewrap { overflow: auto; max-height: 440px; margin-top: 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--raised); }
 table { border-collapse: collapse; width: 100%; font-size: 13px; }
 th { position: sticky; top: 0; background: var(--surface); text-align: left; font: 600 11px var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
@@ -482,7 +482,7 @@ tr.differs td { background: var(--bad-bg); }
             <p>§CIRE is based on the Latin word <i>scire</i>, which means "to know", and is pronounced the same way, i.e. SKEE-reh.</p>
             <p>This program is entirely free. If you think it is good and would like to make a small donation for our efforts, please <a href="https://pay.sumup.com/b2c/Q7FNZAZJ" target="_blank" rel="noopener">buy us a coffee here</a>.</p>
             <p>Feedback and comments are welcome. Contact us at: <span class="todo">[contact to be added]</span></p>
-            <p class="lastmod">Last modified: 21 Nov 2026, 18:05</p>
+            <p class="lastmod">Last modified: 25 Nov 2026, 00:30</p>
           </div>
         </details>
       </section>
@@ -799,6 +799,31 @@ function loadSaved() {
   try { var t = localStorage.getItem(STORE_PLAY); var r = t ? JSON.parse(t) : null; return r && r.ucis && r.play ? r : null; } catch (e) { return null; }
 }
 
+// Tidy pasted PGN: the game result (1-0, 0-1, 1/2-1/2, ½-½, *) may use other dashes, be glued to the last move, or sit anywhere in the move text.
+// The headers are left alone. With hard = true, comments, variations and annotation symbols are removed as well.
+function cleanPgn(text, hard) {
+  var t = String(text).replace(/\r/g, '').replace(/[\u2010-\u2015\u2212]/g, '-').replace(/\u00BD\s*-\s*\u00BD/g, '1/2-1/2').replace(/\u00BD/g, '1/2');
+  var RES = /(1\s*-\s*0|0\s*-\s*1|1\/2\s*-\s*1\/2|\*)/;
+  var lines = t.split('\n').map(function (ln) {
+    if (/^\s*\[/.test(ln)) return ln;
+    ln = ln.replace(/([#+!?])(1-0|0-1|1\/2-1\/2)(?=\s|$)/g, '$1 $2');
+    return ln.replace(new RegExp('(^|\\s)' + RES.source + '(?=\\s|$)', 'g'), '$1');
+  });
+  t = lines.join('\n');
+  if (hard) {
+    var head = [], body = [];
+    t.split('\n').forEach(function (ln) { (/^\s*\[/.test(ln) ? head : body).push(ln); });
+    var b = body.join(' ').replace(/\{[^}]*\}/g, ' ').replace(/;[^\n]*/g, ' ');
+    for (var i = 0; i < 5; i++) b = b.replace(/\([^()]*\)/g, ' ');
+    b = b.replace(/\$\d+/g, ' ').replace(/(\d+)\s*\.\s*(\.\.)?/g, '$1. ').replace(/[!?]+/g, ' ').replace(/\s+/g, ' ');
+    t = (head.length ? head.join('\n') + '\n\n' : '') + b.trim();
+  }
+  return t;
+}
+function pgnMoveCount(clean) {
+  var body = clean.split('\n').filter(function (ln) { return !/^\s*\[/.test(ln); }).join(' ');
+  return body.split(/\s+/).filter(function (t) { return t && !/^\d+\.+$/.test(t); }).length;
+}
 function parseGame(text) {
   text = (text || '').trim();
   if (!text) throw new Error('Paste a PGN or a FEN first.');
@@ -807,8 +832,13 @@ function parseGame(text) {
     if (!v.valid) throw new Error('That FEN is not valid: ' + v.error);
     return { start: text, moves: [] };
   }
-  var g = new Chess();
-  if (!g.load_pgn(text, { sloppy: true })) throw new Error('Could not read that PGN. Check the move text for typos.');
+  // Try the lightly tidied text first. If it fails, or reads fewer moves than the text holds, use the fully cleaned text (no comments, variations or symbols).
+  var hard = cleanPgn(text, true), want = pgnMoveCount(hard), g = new Chess();
+  var ok = g.load_pgn(cleanPgn(text, false), { sloppy: true }) && g.history().length >= want;
+  if (!ok) {
+    g = new Chess();
+    if (!g.load_pgn(hard, { sloppy: true })) throw new Error('Could not read that PGN. Check the move text for typos.');
+  }
   var hist = g.history({ verbose: true });
   var hdr = g.header();
   return { start: hdr.FEN || START, moves: hist.map(function (h) { return { from: h.from, to: h.to, promotion: h.promotion }; }) };
@@ -1512,7 +1542,7 @@ function renderEngine() {
   h += '<li>Searched to depth ' + d.eng.depth + (d.eng.secs ? ' in ' + fmtTime(d.eng.secs) : '') + '. Scores are from ' + sideName(S.ply) + '’s side. Rankings can shuffle at other depths.</li></ul>';
   lvChoose(a);
   h += '<div class="eng-split"><div class="lv" id="lv" aria-label="Engine line board"></div><div class="eng-right"><div class="tablewrap"><table><thead><tr><th></th><th>#</th><th>Move</th><th style="text-align:right">Eval</th><th style="text-align:right">Loss</th><th style="text-align:center">You</th><th>Engine</th></tr></thead><tbody>';
-  var shown = ENG_ALL ? a.L : a.L.filter(function (l, i) { return i < ENG_SHOW || d.cands.indexOf(l.uci) >= 0; });
+  var shown = ENG_ALL ? a.L : a.L.filter(function (l, i) { return i < ENG_SHOW || d.cands.indexOf(l.uci) >= 0 || l.uci === played; });
   shown.forEach(function (l) {
     var gr = d.grades[l.uci], ci = d.cands.indexOf(l.uci), differs = false;
     if (gr && gr !== 'unsure') differs = gr === 'good' ? l.cls !== 'good' : gr === 'ok' ? l.cls === 'bad' : l.cls !== 'bad';
@@ -1520,7 +1550,7 @@ function renderEngine() {
       (ci >= 0 ? '<span class="tag">C' + (ci + 1) + '</span>' : '') + (l.uci === played ? '<span class="tag played">played</span>' : '') +
       '</td><td class="num">' + fmtEval(l) + '</td><td class="num">' + fmtLoss(l.loss) + '</td><td class="you">' + (gr ? '<span class="gs g-' + gr + '">' + GSYM[gr] + '</span>' : '') + '</td><td style="white-space:nowrap"><span class="gs eicon g-' + l.cls + '">' + GSYM[l.cls] + '</span><span class="pill ' + l.cls + '">' + l.cls + '</span>' + (differs ? '<span class="diff" title="Your grade differs from the engine">≠</span>' : '') + '</td></tr>';
   });
-  h += '</tbody></table></div>' + (a.L.length > shown.length || ENG_ALL ? '<button type="button" class="btn small eng-more" data-engall="1" aria-expanded="' + ENG_ALL + '">' + (ENG_ALL ? 'Show only the top ' + ENG_SHOW + (d.cands.length ? ' and your candidates' : '') : 'Show all ' + a.L.length + ' moves') + '</button>' : '') + '</div></div>';
+  h += '</tbody></table></div>' + (a.L.length > shown.length || ENG_ALL ? '<button type="button" class="btn small eng-more" data-engall="1" aria-expanded="' + ENG_ALL + '">' + (ENG_ALL ? 'Show only the top ' + ENG_SHOW + ' and your picks' : 'Show all ' + a.L.length + ' moves') + '</button>' : '') + '</div></div>';
   box.innerHTML = h;
   lvRender();
 }
